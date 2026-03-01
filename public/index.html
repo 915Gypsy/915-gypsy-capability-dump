@@ -1,237 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>915 Gypsy — Procurement Capability Dump™</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:system-ui,-apple-system,sans-serif;background:#2B0F06;}
-  select option{background:#2B0F06;color:#E6C88F;}
-  ::-webkit-scrollbar{width:6px;}
-  ::-webkit-scrollbar-track{background:#2B0F06;}
-  ::-webkit-scrollbar-thumb{background:#6b3a1f;border-radius:3px;}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  @keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(2.2);opacity:0}}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,sans-serif;background:#2B0F06;}
+select option{background:#2B0F06;color:#E6C88F;}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:#2B0F06;}
+::-webkit-scrollbar-thumb{background:#6b3a1f;border-radius:3px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(2.2);opacity:0}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useRef,useEffect,useCallback}=React;
-
-// ─── BRAND COLORS ──────────────────────────────────────────────────────────
-const B={bg:"#2B0F06",rust:"#C4551C",sand:"#E6C88F",gold:"#D4B072",card:"#3a1a0c",mid:"#4a2510",border:"#6b3a1f",white:"#ffffff"};
+const {useState,useRef,useEffect}=React;
+const B={bg:"#2B0F06",rust:"#C4551C",sand:"#E6C88F",gold:"#D4B072",card:"#3a1a0c",mid:"#4a2510",border:"#6b3a1f",white:"#ffffff",green:"#2d6a1f",greenBright:"#8adf4a"};
 const LOGO="https://img1.wsimg.com/isteam/ip/24c22cb3-fef9-4b59-9955-fb4483f9ade0/915%20Gypsy.png/:/rs=w:260,h:260,cg:true,m/cr=w:260,h:260";
-
-// ─── NETLIFY ENDPOINTS ─────────────────────────────────────────────────────
-const CLAUDE_ENDPOINT="/.netlify/functions/claude";
-const AIRTABLE_ENDPOINT="/.netlify/functions/airtable";
-
-// ─── AIRTABLE CONFIG ───────────────────────────────────────────────────────
 const AT_BASE="app88aYwbI34Soaiz";
 const AT_TABLE="tbltv5EKv5D6wjPwu";
 const AT_FIELDS={
   name:"fldFjQf3NgdBynjlm",industry:"fld6s42MwLWsGJUuB",bizType:"fldgESTkatKW2iJwR",
   date:"fldHe1440gjGG1dUI",website:"fldfhM0wz46iMSlDH",linkedin:"fldXtiYvoInxJnvYA",
   facebook:"fldrvDOszqORWWxcD",instagram:"fldbgI4KuiLeE7chW",tiktok:"fld2u7NMXbw5QQ5hn",
-  youtube:"fldkjzY6tF9XqKHrn",other:"fldPbLVHBU5zVo3mT",s1:"fldJLGYDBdd7TE5Qc",
-  s2:"fldyAKP1BFOFinJ9w",s3:"fldoTS3z5L4GIdTKP",s4:"fldRBlvJeCQw5UAWw",
-  s5:"fldza8UrVcNJYUSTa",s6:"fldUbGRkY37C0gyn0",s7:"fldTAzjX236E9jnae",
-  s8:"fldJrrE3BAlpMAzlE",s9:"fldTUgLWdtuDjMPhQ",s10:"fldWYBdW6CMosyGD2",
-  s11:"fldRWWNm128SNJ70D",canDo:"fldetonFG7lf6Okst",cannotDo:"fldQrlY4ayiyTHP7e",
-  conditional:"fldZQc0XS8J9eNaYv",flags:"fldxKRaD7O2MiQCJB",score:"fldaP3y31VARHPyag",
-  tiles:"fldVfBpkioVI0TAlC"
+  youtube:"fldkjzY6tF9XqKHrn",other:"fldPbLVHBU5zVo3mT",
+  s1:"fldJLGYDBdd7TE5Qc",s2:"fldyAKP1BFOFinJ9w",s3:"fldoTS3z5L4GIdTKP",s4:"fldRBlvJeCQw5UAWw",
+  s5:"fldza8UrVcNJYUSTa",s6:"fldUbGRkY37C0gyn0",s7:"fldTAzjX236E9jnae",s8:"fldJrrE3BAlpMAzlE",
+  s9:"fldTUgLWdtuDjMPhQ",s10:"fldWYBdW6CMosyGD2",s11:"fldRWWNm128SNJ70D",
+  score:"fldaP3y31VARHPyag"
 };
 const SEC_FIELD={1:"s1",2:"s2",3:"s3",4:"s4",5:"s5",6:"s6",7:"s7",8:"s8",9:"s9",10:"s10",11:"s11"};
 
-// ─── MINIMUM ANSWER THRESHOLD ──────────────────────────────────────────────
-const MIN_CHARS=150;
-function isTooShort(val){return !val||val.trim().length<MIN_CHARS;}
-
-// ─── SECTIONS & QUESTIONS ─────────────────────────────────────────────────
-// Each question has: id, base (main question text), subs (array of sub-questions),
-// docs (proposal tiles), tag, tagLabel.
-// ALL subs are treated as required separate inputs.
 const SECTIONS=[
   {id:1,title:"Business Identity & Legal Framework",questions:[
-    {id:1,base:"What is your complete business identity as it exists today?",subs:["How is the business legally structured, and how does that influence your operations?","What licenses, registrations, or credentials are currently active (SAM.gov, CMBL, HUB, insurance, etc.)?"],docs:["Capability Statement","SAM/DSBS Profile","Compliance Attachments"],tag:"🟩",tagLabel:"Core Foundation"},
-    {id:2,base:"What specific services are you legally and safely authorized to perform?",subs:["Where do your licenses stop?","Are there any licenses or registrations you are currently pursuing?"],docs:["Technical Approach","Licensure Documentation","Capability Statement"],tag:"🟥",tagLabel:"Compliance Boundary"}
+    {id:1,tag:"🟩",tagLabel:"Core Foundation",docs:["Capability Statement","SAM/DSBS Profile","Compliance Attachments"],
+     base:"What is your complete business identity as it exists today?",
+     subs:["How is the business legally structured, and how does that influence your operations?","What licenses, registrations, or credentials are currently active (state licenses, trade licenses, SAM.gov, CMBL, HUB, insurance, etc.)?"]},
+    {id:2,tag:"🟥",tagLabel:"Compliance Boundary",docs:["Technical Approach","Licensure Documentation","Capability Statement"],
+     base:"What specific services are you legally and safely authorized to perform?",
+     subs:["Where do your licenses stop?","Are there any licenses or registrations you are currently pursuing?"]}
   ]},
   {id:2,title:"Scope of Work: What You Do & Do Not Do",questions:[
-    {id:3,base:"If someone asked 'What exactly does your company DO?' — what is your clear, confident answer?",subs:["What are the three core services you perform consistently?","What services do people assume you do, but you actually don't?"],docs:["Core Competencies","Technical Approach","SAM Profile"],tag:"🟩",tagLabel:"Core Capability"},
-    {id:4,base:"What work do you absolutely NOT perform under any circumstance?",subs:["Why don't you perform this work — licensing, safety, cost, risk?","If a contract requires this task, would you decline or subcontract?"],docs:["Assumptions/Limitations","Technical Approach","Risk Plan"],tag:"🟥",tagLabel:"Hidden Risk"},
-    {id:5,base:"What tasks fall in the conditional category — where you can do them, but only under certain situations?",subs:["What conditions must be met for you to say yes?","What conditions cause an automatic no-bid?"],docs:["Technical Approach","Pricing Narrative","Risk Mitigation"],tag:"🟧",tagLabel:"Operational Constraint"}
+    {id:3,tag:"🟩",tagLabel:"Core Capability",docs:["Core Competencies","Technical Approach","SAM Profile"],
+     base:"If someone asked, \"What exactly does your company DO?\" — what is your clear, confident answer?",
+     subs:["What are the three core services you perform consistently?","What services do people assume you do, but you actually don't?"]},
+    {id:4,tag:"🟥",tagLabel:"Hidden Risk",docs:["Assumptions/Limitations","Technical Approach","Risk Plan"],
+     base:"What work do you absolutely NOT perform under any circumstance?",
+     subs:["Why don't you perform this work (licensing, safety, cost, risk, capacity limits)?","If a contract requires this task, would you decline or subcontract?"]},
+    {id:5,tag:"🟧",tagLabel:"Operational Constraint",docs:["Technical Approach","Pricing Narrative","Risk Mitigation"],
+     base:"What tasks fall in the \"conditional\" category — where you can do them, but only under certain situations?",
+     subs:["What conditions must be met for you to say yes?","What conditions cause an automatic no-bid?"]}
   ]},
   {id:3,title:"Throughput, Capacity & Operational Limits",questions:[
-    {id:6,base:"What is your real operational throughput — the volume of work you can complete in a day, week, and month?",subs:["What limits your throughput — people, equipment, supply chain, weather?","What is the difference between your normal load and your maximum safe load?"],docs:["Technical Approach","Production Rate","Staffing Plan"],tag:"⚙️",tagLabel:"Operational Bottleneck"},
-    {id:7,base:"What is the largest project you've successfully completed, and what made it work?",subs:["What factors allowed that scale?","Could you repeat that same project today?"],docs:["Past Performance","Experience Narrative","Capability Statement"],tag:"⭐",tagLabel:"Proven Capability"},
-    {id:8,base:"What projects are too large for you right now, and why?",subs:["Is the limitation size, duration, crew count, or cash flow?","What would need to change to take on work at that scale?"],docs:["Risk Plan","Assumptions","Go/No-Go Guidance"],tag:"🟥",tagLabel:"Capacity Risk"},
-    {id:9,base:"If demand doubled or tripled in 30 days, what would break first in your operations?",subs:["What part of your workflow would bottleneck immediately?","What people, processes, or equipment would you need to prevent that breakdown?"],docs:["Risk Mitigation","Contingency Plan","Staffing Strategy"],tag:"🟧",tagLabel:"System Stress Test"}
+    {id:6,tag:"⚙️",tagLabel:"Operational Bottleneck",docs:["Technical Approach","Production Rate","Staffing Plan"],
+     base:"What is your real operational throughput — the volume of work you can complete in a day, week, and month?",
+     subs:["What limits your throughput (people, equipment, supply chain, weather, workflow)?","What is the difference between your normal load and your maximum safe load?"]},
+    {id:7,tag:"⭐",tagLabel:"Proven Capability",docs:["Past Performance","Experience Narrative","Capability Statement"],
+     base:"What is the largest project you've successfully completed, and what made it successful?",
+     subs:["What factors allowed that scale?","Could you repeat that same project today?"]},
+    {id:8,tag:"🟥",tagLabel:"Capacity Risk",docs:["Risk Plan","Assumptions","Go/No-Go Guidance"],
+     base:"What projects are too large for you right now, and why?",
+     subs:["Is the limitation size, duration, crew count, cash flow, or something else?","What would need to change to take on work at that scale?"]},
+    {id:9,tag:"🟧",tagLabel:"System Stress Test",docs:["Risk Mitigation","Contingency Plan","Staffing Strategy"],
+     base:"If demand doubled or tripled in 30 days, what would break first in your operations?",
+     subs:["What part of your workflow would bottleneck immediately?","What people, processes, or equipment would you need to prevent that breakdown?"]}
   ]},
   {id:4,title:"People, Crew, Qualifications & Structure",questions:[
-    {id:10,base:"Who performs the work — what roles, certifications, and skill levels exist within your team?",subs:["Who is cross-trained versus highly specialized?","Who holds certifications or licenses, and for what tasks?"],docs:["Staffing Plan","Qualifications Matrix","Org Chart"],tag:"🟩",tagLabel:"Human Capital Strength"},
-    {id:11,base:"Who is your strongest or most reliable team, and why do you trust them with your most important jobs?",subs:["How do you assign jobs based on skills?","Who steps in if key personnel are unavailable?"],docs:["Management Plan","Key Personnel Resumes","Past Performance"],tag:"⭐",tagLabel:"Operational Differentiator"},
-    {id:12,base:"Are you currently understaffed, overstaffed, or staffed appropriately for the contracts you want to pursue?",subs:["How quickly can you onboard new team members?","What training gaps exist today?"],docs:["Staffing Plan","Ramp-Up Plan","Workload Projections"],tag:"🟧",tagLabel:"Workforce Constraint"}
+    {id:10,tag:"🟩",tagLabel:"Human Capital Strength",docs:["Staffing Plan","Qualifications Matrix","Org Chart"],
+     base:"Who performs the work — what roles, certifications, and skill levels exist within your team?",
+     subs:["Who is cross-trained versus highly specialized?","Who holds certifications or licenses, and for what tasks?"]},
+    {id:11,tag:"⭐",tagLabel:"Operational Differentiator",docs:["Management Plan","Key Personnel Resumes","Past Performance"],
+     base:"Who is your strongest or most reliable team, and why do you trust them with your most important jobs?",
+     subs:["How do you assign jobs based on skills?","Who steps in if key personnel are unavailable?"]},
+    {id:12,tag:"🟧",tagLabel:"Workforce Constraint",docs:["Staffing Plan","Ramp-Up Plan","Workload Projections"],
+     base:"Are you currently understaffed, overstaffed, or staffed appropriately for the contracts you want to pursue?",
+     subs:["How quickly can you onboard new team members?","What training gaps exist today?"]}
   ]},
   {id:5,title:"Equipment, Fleet, Materials & Resources",questions:[
-    {id:13,base:"What equipment, tools, vehicles, and assets do you own or have guaranteed access to?",subs:["Which assets are most essential to your core services?","Which assets become bottlenecks when demand increases?"],docs:["Equipment List","Technical Approach","Production Rate"],tag:"🧰",tagLabel:"Asset Capability Profile"},
-    {id:14,base:"What materials or supplies do you rely on heavily, and what supply chain constraints affect you?",subs:["Do you procure materials in bulk or job-by-job?","Which vendors or suppliers are most reliable?"],docs:["Technical Approach","Contingency Plan","Schedule"],tag:"🔧",tagLabel:"Supply Chain Stability"}
+    {id:13,tag:"🧰",tagLabel:"Asset Capability Profile",docs:["Equipment List","Technical Approach","Production Rate"],
+     base:"What equipment, tools, vehicles, and assets do you own or have guaranteed access to?",
+     subs:["Which assets are most essential to your core services?","Which assets become bottlenecks when demand increases?"]},
+    {id:14,tag:"🔧",tagLabel:"Supply Chain Stability",docs:["Technical Approach","Contingency Plan","Schedule"],
+     base:"What materials or supplies do you rely on heavily, and what supply chain constraints affect you?",
+     subs:["Do you procure materials in bulk or job-by-job?","Which vendors or suppliers are most reliable?"]}
   ]},
   {id:6,title:"Safety, QA/QC, Compliance & Risk Management",questions:[
-    {id:15,base:"What safety practices, logs, certifications, or protocols do you maintain?",subs:["Who is responsible for managing safety compliance?","How is safety documented — digital, paper logs, or nothing yet?"],docs:["Safety Plan","Compliance Attachments","QA/QC"],tag:"🟥",tagLabel:"Compliance Risk"},
-    {id:16,base:"What quality control steps do you always complete before finalizing a job?",subs:["Who performs final checks?","What documentation confirms quality?"],docs:["QA/QC Plan","Technical Approach","Performance Metrics"],tag:"🟩",tagLabel:"Performance Reliability"},
-    {id:17,base:"What risks do you actively avoid because they threaten performance, safety, or compliance?",subs:["What risks have caused problems in the past?","How do you determine when a risk is too high?"],docs:["Risk Plan","Assumptions","Go/No-Go Criteria"],tag:"🟥",tagLabel:"Risk Boundary"}
+    {id:15,tag:"🟥",tagLabel:"Compliance Risk",docs:["Safety Plan","Compliance Attachments","QA/QC"],
+     base:"What safety practices, logs, certifications, or protocols do you maintain?",
+     subs:["Who is responsible for managing safety compliance?","How is safety documented (digital system, paper logs, none)?"]},
+    {id:16,tag:"🟩",tagLabel:"Performance Reliability",docs:["QA/QC Plan","Technical Approach","Performance Metrics"],
+     base:"What quality control steps do you always complete before finalizing a job?",
+     subs:["Who performs final checks?","What documentation confirms quality?"]},
+    {id:17,tag:"🟥",tagLabel:"Risk Boundary",docs:["Risk Plan","Assumptions","Go/No-Go Criteria"],
+     base:"What risks do you actively avoid because they threaten performance, safety, or compliance?",
+     subs:["What risks have caused problems in the past?","How do you determine when a risk is too high?"]}
   ]},
   {id:7,title:"Financial Readiness, Pricing & Cash Flow",questions:[
-    {id:18,base:"How do you price your work, and what logic or methodology guides your pricing?",subs:["How do you calculate labor, materials, markup, and contingencies?","Do you use a standard rate sheet?"],docs:["Pricing Narrative","Budget","Cost Breakdown"],tag:"💲",tagLabel:"Financial Capability"},
-    {id:19,base:"What financial constraints impact your ability to take on larger projects?",subs:["Cash flow, credit, payroll cycles, equipment financing?","How many days can you float payroll on a new contract?"],docs:["Ramp-Up Plan","Pricing Assumptions","Financial Capacity"],tag:"⚠️",tagLabel:"Performance Risk"}
+    {id:18,tag:"💲",tagLabel:"Financial Capability",docs:["Pricing Narrative","Budget","Cost Breakdown"],
+     base:"How do you price your work, and what logic or methodology guides your pricing?",
+     subs:["How do you calculate labor, materials, markup, and contingencies?","Do you use a standard rate sheet?"]},
+    {id:19,tag:"⚠️",tagLabel:"Performance Risk",docs:["Ramp-Up Plan","Pricing Assumptions","Financial Capacity"],
+     base:"What financial constraints impact your ability to take on larger projects?",
+     subs:["Cash flow, credit, payroll cycles, equipment financing?","How many days can you float payroll on a new contract?"]}
   ]},
   {id:8,title:"Technology, Systems & AI Readiness",questions:[
-    {id:20,base:"What systems run your business today — scheduling, dispatch, billing, proposals, safety?",subs:["Are these systems digital or manual?","Who on your team knows how to use each system?"],docs:["Management Plan","QA/QC","Workflow Narrative"],tag:"💻",tagLabel:"Digital Maturity"},
-    {id:21,base:"What technology should your industry be using today, and have you adopted it?",subs:["What tools are competitors using that you are not?","What technology gaps slow you down?"],docs:["Technical Approach","Capability Statement"],tag:"⚙️",tagLabel:"Competitive Gap"},
-    {id:22,base:"Are you currently using any form of AI in your business?",subs:["If yes, for what tasks?","If no, what concerns or barriers exist?"],docs:["Proposal Generation","Workflow Narrative"],tag:"🤖",tagLabel:"Automation Readiness"},
-    {id:23,base:"If you could automate three tasks tomorrow, what would they be and why?",subs:["What tasks feel repetitive or prone to delay?","What tasks create the most friction or errors?"],docs:["Management Plan","Efficiency Plan"],tag:"🔧",tagLabel:"Process Improvement"}
+    {id:20,tag:"💻",tagLabel:"Digital Maturity",docs:["Management Plan","QA/QC","Workflow Narrative"],
+     base:"What systems run your business today (scheduling, dispatch, inventory, billing, proposals, safety, QA)?",
+     subs:["Are these systems digital or manual?","Who on your team knows how to use each system?"]},
+    {id:21,tag:"⚙️",tagLabel:"Competitive Gap",docs:["Technical Approach","Capability Statement"],
+     base:"What technology should your industry be using today, and have you adopted it? Why or why not?",
+     subs:["What tools are competitors using that you are not?","What technology gaps slow you down?"]},
+    {id:22,tag:"🤖",tagLabel:"Automation Readiness",docs:["Proposal Generation","Workflow Narrative"],
+     base:"Are you currently using any form of AI in your business?",
+     subs:["If yes, for what tasks?","If no, what concerns, barriers, or limitations exist?"]},
+    {id:23,tag:"🔧",tagLabel:"Process Improvement",docs:["Management Plan","Efficiency Plan"],
+     base:"If you could automate three tasks tomorrow, what would they be and why?",
+     subs:["What tasks feel repetitive or prone to delay?","What tasks create the most friction or errors?"]}
   ]},
   {id:9,title:"Past Performance, References & Client Experience",questions:[
-    {id:24,base:"What past jobs best represent the type of work you want to win in the future?",subs:["Why are these projects strong examples of your capabilities?","What measurable results or outcomes support this?"],docs:["Past Performance","Technical Approach","DSBS Narrative"],tag:"⭐",tagLabel:"Evidence of Capability"}
+    {id:24,tag:"⭐",tagLabel:"Evidence of Capability",docs:["Past Performance","Technical Approach","DSBS Narrative"],
+     base:"What past jobs best represent the type of work you want to win in the future?",
+     subs:["Why are these projects strong examples of your capabilities?","What measurable results or outcomes support this?"]}
   ]},
   {id:10,title:"Subcontractors, Partners & Teaming",questions:[
-    {id:25,base:"Who do you subcontract to, and for what tasks?",subs:["How do you vet or qualify subcontractors?","What work do you refuse to subcontract?"],docs:["Subcontracting Plan","Technical Approach","Risk Plan"],tag:"🤝",tagLabel:"Teaming Structure"}
+    {id:25,tag:"🤝",tagLabel:"Teaming Structure",docs:["Subcontracting Plan","Technical Approach","Risk Plan"],
+     base:"Who do you subcontract to, and for what tasks?",
+     subs:["How do you vet or qualify subcontractors?","What work do you refuse to subcontract?"]}
   ]},
   {id:11,title:"Risk Boundaries, No-Go Conditions & Decision Rules",questions:[
-    {id:26,base:"What forces an automatic no-bid decision for your company?",subs:["What red flags signal that a job is not a good fit?","What past experiences shaped these boundaries?"],docs:["Go/No-Go Criteria","Assumptions","Risk Management"],tag:"🚫",tagLabel:"Contract Risk Protection"}
+    {id:26,tag:"🚫",tagLabel:"Contract Risk Protection",docs:["Go/No-Go Criteria","Assumptions","Risk Management"],
+     base:"What forces an automatic no-bid decision for your company?",
+     subs:["What red flags signal that a job is not a good fit?","What past experiences shaped these boundaries?"]}
   ]}
 ];
 
-// Flatten into individual prompt items: each question + each sub = separate items
-// item shape: { qId, type:"main"|"sub", subIdx?:number, text, tag, tagLabel, docs, sectionId }
-function buildFlatItems(sections){
-  const items=[];
-  sections.forEach(sec=>{
-    sec.questions.forEach(q=>{
-      items.push({qId:q.id,type:"main",text:q.base,tag:q.tag,tagLabel:q.tagLabel,docs:q.docs,sectionId:sec.id,sectionTitle:sec.title});
-      q.subs.forEach((s,i)=>{
-        items.push({qId:q.id,type:"sub",subIdx:i,text:s,tag:q.tag,tagLabel:q.tagLabel,docs:q.docs,sectionId:sec.id,sectionTitle:sec.title});
-      });
-    });
-  });
-  return items;
-}
-const ALL_ITEMS=buildFlatItems(SECTIONS);
-const ALL_Q=SECTIONS.flatMap(s=>s.questions);
-const TOTAL=ALL_ITEMS.length;
-
 const INDUSTRIES=["Roofing & Waterproofing","General Contracting","Electrical","Plumbing","HVAC","Landscaping & Grounds","Janitorial & Facilities","Construction Management","IT & Cybersecurity","Web & App Development","AI & Automation","Consulting & Professional Services","Workforce Development & Training","Staffing & Recruiting","Marketing & Creative","Accounting & Financial Services","Transportation & Logistics","Security Services","Healthcare Services","Other"];
 const BUSINESS_TYPES=["Service-Based","Product-Based","Product + Service","Subcontractor","Prime Contractor","Joint Venture","Nonprofit"];
+const ALL_Q=SECTIONS.flatMap(s=>s.questions);
 
-const LS_KEY="pcd_session_v2";
-
-// ─── SAFE JSON PARSE ───────────────────────────────────────────────────────
-function safeJsonParse(text){
-  if(!text||!text.trim()) throw new Error("Empty response");
-  let s=text.replace(/```json/g,"").replace(/```/g,"").trim();
-  const first=s.indexOf("{");
-  const last=s.lastIndexOf("}");
-  if(first===-1||last===-1) throw new Error("No JSON object found");
-  s=s.substring(first,last+1);
-  return JSON.parse(s);
+function calcScore(answers){
+  const total=ALL_Q.length;
+  const answered=Object.values(answers).filter(a=>a&&a.trim().length>0).length;
+  const avgLen=answered===0?0:Object.values(answers).filter(a=>a&&a.trim().length>0).reduce((s,a)=>s+a.trim().length,0)/answered;
+  const completionScore=(answered/total)*6; // max 6 pts from completion
+  const qualityScore=Math.min(4,avgLen/80); // max 4 pts from avg length (~320+ chars = full 4)
+  return Math.min(10,Math.round((completionScore+qualityScore)*10)/10);
 }
 
-// ─── API CALLS ─────────────────────────────────────────────────────────────
-async function callClaude(prompt,max=900){
-  const r=await fetch(CLAUDE_ENDPOINT,{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:max,messages:[{role:"user",content:prompt}]})
-  });
-  if(!r.ok) throw new Error(`Claude API error ${r.status}`);
-  const d=await r.json();
-  return(d.content?.map(b=>b.text||"").join("")||"").trim();
-}
-
-async function tailorQuestion(baseText,subs,industry,bizType,qNum){
+async function tailorQ(base,subs,industry,bizType,num){
   try{
-    const txt=await callClaude(`Rewrite this procurement interview question for a ${industry} ${bizType} business. Keep same intent, make language specific to their trade. Return ONLY JSON: {"main":"...","subs":["...","..."]}
-Q${qNum}: ${baseText}
-Subs: ${subs.join(" | ")}`);
-    const parsed=safeJsonParse(txt);
-    if(!parsed.main||!Array.isArray(parsed.subs)) throw new Error("Bad shape");
-    return parsed;
-  }catch{return{main:baseText,subs};}
+    const r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:400,
+        messages:[{role:"user",content:`Rewrite this procurement interview question for a ${industry} ${bizType} business. Keep same intent, make language specific to their trade. Return ONLY JSON: {"main":"...","subs":["...","..."]}
+Q${num}: ${base}
+Subs: ${subs.join(" | ")}`}]})
+    });
+    const d=await r.json();
+    const txt=(d.content?.map(b=>b.text||"").join("")||"").replace(/```json|```/g,"").trim();
+    return JSON.parse(txt);
+  }catch{return{main:base,subs};}
 }
 
-async function buildReport(answers,biz){
-  // Serialize answers: answers[qId] = { main:"...", subs:["...","..."] }
-  const lines=ALL_Q.map(q=>{
-    const a=answers[q.id];
-    if(!a) return null;
-    let out=`Q${q.id} MAIN (${q.tagLabel}):\n${a.main||""}`;
-    if(q.subs&&q.subs.length){
-      q.subs.forEach((s,i)=>{
-        out+=`\nQ${q.id} SUB ${i+1} — ${s}\n${(a.subs&&a.subs[i])||""}`;
-      });
-    }
-    return out;
-  }).filter(Boolean).join("\n\n─────\n\n");
-
-  const raw=await callClaude(`You are a procurement capability analyst for 915 Gypsy LLC. Analyze this small business interview.
-Business: ${biz.name} | Industry: ${biz.industry} | Type: ${biz.bizType}
-ANSWERS:\n${lines}
-Return ONLY valid JSON:
-{"canDo":[{"item":"...","evidence":"..."}],"cannotDo":[{"item":"...","reason":"..."}],"conditional":[{"item":"...","condition":"..."}],"flags":[{"type":"gap|risk|opportunity","description":"..."}],"proposalReadiness":{"score":5,"summary":"2-3 sentence assessment"},"tileMapping":[{"tile":"...","status":"ready|needs work|missing","note":"..."}]}
-tileMapping must include all 16: Corporate Documents, Capability Statement, Insurance, OSHA & Safety, Past Performance, Pricing, Project Portfolio, Compliance, Equipment & Fleet, Crew Qualifications, Financial Readiness, Bid Documents, Subcontractor Network, QA/QC Plan, Scheduling, AI & Technology`,1800);
-  return safeJsonParse(raw);
-}
-
-async function submitToAirtable(biz,social,answers,report){
+async function submitToAirtable(biz,social,answers,score){
   const secAnswers={};
   SECTIONS.forEach(sec=>{
     const key=SEC_FIELD[sec.id];
-    const lines=sec.questions.map(q=>{
-      const a=answers[q.id];
-      if(!a) return null;
-      let out=`Q${q.id} — ${q.base}\nMAIN: ${a.main||""}`;
-      q.subs.forEach((s,i)=>{
-        out+=`\nSUB ${i+1}: ${s}\n${(a.subs&&a.subs[i])||""}`;
-      });
-      return out;
-    }).filter(Boolean);
-    if(lines.length) secAnswers[key]=lines.join("\n\n─────\n\n");
+    const lines=sec.questions.map(q=>answers[q.id]?`Q${q.id} — ${q.base}\n${answers[q.id]}`:null).filter(Boolean);
+    if(lines.length)secAnswers[key]=lines.join("\n\n─────\n\n");
   });
-
   const fields={
-    [AT_FIELDS.name]:biz.name,
-    [AT_FIELDS.industry]:biz.industry,
-    [AT_FIELDS.bizType]:biz.bizType,
-    [AT_FIELDS.date]:new Date().toISOString().split("T")[0],
-    [AT_FIELDS.score]:report.proposalReadiness?.score||0,
-    [AT_FIELDS.canDo]:report.canDo?.map(c=>`✅ ${c.item}\n${c.evidence}`).join("\n\n")||"",
-    [AT_FIELDS.cannotDo]:report.cannotDo?.map(c=>`🚫 ${c.item}\n${c.reason}`).join("\n\n")||"",
-    [AT_FIELDS.conditional]:report.conditional?.map(c=>`⚠️ ${c.item}\nOnly if: ${c.condition}`).join("\n\n")||"",
-    [AT_FIELDS.flags]:report.flags?.map(f=>`[${f.type.toUpperCase()}] ${f.description}`).join("\n\n")||"",
-    [AT_FIELDS.tiles]:report.tileMapping?.map(t=>`${(t.status||"").toUpperCase()} — ${t.tile}: ${t.note}`).join("\n")||"",
+    [AT_FIELDS.name]:biz.name,[AT_FIELDS.industry]:biz.industry,[AT_FIELDS.bizType]:biz.bizType,
+    [AT_FIELDS.date]:new Date().toISOString().split("T")[0],[AT_FIELDS.score]:score
   };
-  if(social.website) fields[AT_FIELDS.website]=social.website;
-  if(social.linkedin) fields[AT_FIELDS.linkedin]=social.linkedin;
-  if(social.facebook) fields[AT_FIELDS.facebook]=social.facebook;
-  if(social.instagram) fields[AT_FIELDS.instagram]=social.instagram;
-  if(social.tiktok) fields[AT_FIELDS.tiktok]=social.tiktok;
-  if(social.youtube) fields[AT_FIELDS.youtube]=social.youtube;
-  if(social.other) fields[AT_FIELDS.other]=social.other;
-  Object.entries(secAnswers).forEach(([key,val])=>{fields[AT_FIELDS[key]]=val;});
-
-  const res=await fetch(AIRTABLE_ENDPOINT,{
+  if(social.website)fields[AT_FIELDS.website]=social.website;
+  if(social.linkedin)fields[AT_FIELDS.linkedin]=social.linkedin;
+  if(social.facebook)fields[AT_FIELDS.facebook]=social.facebook;
+  if(social.instagram)fields[AT_FIELDS.instagram]=social.instagram;
+  if(social.tiktok)fields[AT_FIELDS.tiktok]=social.tiktok;
+  if(social.youtube)fields[AT_FIELDS.youtube]=social.youtube;
+  if(social.other)fields[AT_FIELDS.other]=social.other;
+  Object.entries(secAnswers).forEach(([k,v])=>{fields[AT_FIELDS[k]]=v;});
+  const res=await fetch(`https://api.airtable.com/v0/${AT_BASE}/${AT_TABLE}`,{
     method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({baseId:AT_BASE,tableId:AT_TABLE,fields})
+    headers:{"Content-Type":"application/json","Authorization":"Bearer YOUR_AIRTABLE_API_KEY"},
+    body:JSON.stringify({fields})
   });
   return res.ok;
 }
 
-// ─── VOICE HOOK ────────────────────────────────────────────────────────────
 function useVoice(onFinal){
   const[on,setOn]=useState(false);
   const[interim,setInterim]=useState("");
@@ -257,11 +222,10 @@ function useVoice(onFinal){
   return{on,interim,start,stop,supported};
 }
 
-// ─── SHARED COMPONENTS ─────────────────────────────────────────────────────
 function Logo({size=44}){
   const[err,setErr]=useState(false);
-  if(err)return React.createElement("span",{style:{color:B.sand,fontWeight:900,fontSize:20,letterSpacing:2}},"915 GYPSY");
-  return React.createElement("img",{src:LOGO,alt:"915 Gypsy",style:{height:size,width:"auto",objectFit:"contain",display:"block"},onError:()=>setErr(true)});
+  if(err)return<span style={{color:B.sand,fontWeight:900,fontSize:20,letterSpacing:2}}>915 GYPSY</span>;
+  return<img src={LOGO} alt="915 Gypsy" style={{height:size,width:"auto",objectFit:"contain",display:"block"}} onError={()=>setErr(true)}/>;
 }
 
 function Header({bizName}){
@@ -282,16 +246,7 @@ const cardS={background:B.card,border:`1px solid ${B.border}`,borderRadius:14,pa
 const inpS={width:"100%",padding:"10px 14px",background:B.mid,border:`1px solid ${B.border}`,borderRadius:8,fontSize:14,fontFamily:"inherit",color:B.sand,boxSizing:"border-box"};
 const lblS={display:"block",fontSize:11,fontWeight:700,color:B.gold,marginBottom:5,marginTop:14,letterSpacing:.5,textTransform:"uppercase"};
 
-function RBtn({children,onClick,disabled,full,style={}}){
-  return(
-    <button onClick={onClick} disabled={disabled} style={{padding:"12px 24px",background:disabled?B.mid:B.rust,color:disabled?"#9a7060":B.white,border:"none",borderRadius:8,fontWeight:800,fontSize:14,cursor:disabled?"not-allowed":"pointer",width:full?"100%":undefined,...style}}>
-      {children}
-    </button>
-  );
-}
-
-// ─── ONBOARDING ────────────────────────────────────────────────────────────
-function Onboarding({onStart,savedSession,onResume}){
+function Onboarding({onStart}){
   const[biz,setBiz]=useState({name:"",industry:"",bizType:""});
   const[social,setSocial]=useState({website:"",linkedin:"",facebook:"",instagram:"",tiktok:"",youtube:"",other:""});
   const[showSocial,setShowSocial]=useState(false);
@@ -310,16 +265,6 @@ function Onboarding({onStart,savedSession,onResume}){
       <Header/>
       <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 16px"}}>
         <div style={{maxWidth:540,width:"100%"}}>
-          {/* Resume banner */}
-          {savedSession&&(
-            <div style={{background:B.card,border:`1px solid ${B.gold}`,borderRadius:10,padding:16,marginBottom:20,textAlign:"center"}}>
-              <div style={{color:B.gold,fontWeight:800,fontSize:14,marginBottom:8}}>🔖 You have a saved session — <em>{savedSession.biz?.name}</em></div>
-              <div style={{display:"flex",gap:10,justifyContent:"center"}}>
-                <button onClick={onResume} style={{padding:"8px 22px",background:B.rust,color:B.white,border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer"}}>Resume Where I Left Off</button>
-                <button onClick={()=>{localStorage.removeItem(LS_KEY);window.location.reload();}} style={{padding:"8px 22px",background:B.mid,color:B.sand,border:`1px solid ${B.border}`,borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer"}}>Start Over</button>
-              </div>
-            </div>
-          )}
           <div style={{textAlign:"center",marginBottom:32}}>
             <Logo size={90}/>
             <div style={{width:60,height:3,background:B.rust,margin:"18px auto 14px",borderRadius:2}}/>
@@ -327,8 +272,8 @@ function Onboarding({onStart,savedSession,onResume}){
             <p style={{color:B.gold,fontSize:14,margin:0,lineHeight:1.8}}>A candid, voice-first diagnostic that captures what your company <em>actually</em> does —<br/>so your proposals reflect reality, not guesswork.</p>
           </div>
           <div style={cardS}>
-            <div style={{background:B.mid,border:`1px solid ${B.rust}`,borderRadius:8,padding:14,marginBottom:8}}>
-              <p style={{margin:0,color:B.sand,fontSize:13,lineHeight:1.8}}>🎙️ <strong style={{color:B.gold}}>This is a voice interview.</strong> Answer like you're telling somebody about your company at the bar — honest, real, and detailed. Don't filter yourself. The more candid you are, the stronger your proposals will be.</p>
+            <div style={{background:B.mid,border:`1px solid ${B.rust}`,borderRadius:8,padding:14,marginBottom:16}}>
+              <p style={{margin:0,color:B.sand,fontSize:13,lineHeight:1.8}}>🎙️ <strong style={{color:B.gold}}>This is a voice interview.</strong> Each question has 3 parts — answer them all in one go, like you're telling somebody about your company at the bar. Honest, real, and detailed. The more candid you are, the stronger your proposals will be.</p>
             </div>
             <label style={lblS}>Business Name *</label>
             <input style={inpS} placeholder="Your legal business name" value={biz.name} onChange={e=>setBiz({...biz,name:e.target.value})}/>
@@ -358,2749 +303,103 @@ function Onboarding({onStart,savedSession,onResume}){
                 ))}
               </div>
             )}
-            <RBtn full onClick={()=>onStart(biz,social)} disabled={!valid} style={{marginTop:22,fontSize:15}}>Begin Capability Dump →</RBtn>
-          </div>
-          <p style={{textAlign:"center",color:B.border,fontSize:12,marginTop:12}}>{TOTAL} prompts · 11 sections · AI-tailored to your industry · Your answers go directly to 915 Gypsy</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── SINGLE QUESTION SCREEN ────────────────────────────────────────────────
-function QuestionScreen({item,tailoredText,value,onChange,onNext,onBack,onPause,itemIdx,total,biz}){
-  const textRef=useRef(value||"");
-  const[tooShort,setTooShort]=useState(false);
-  const[prompts,setPrompts]=useState([]);
-  const[loadingPrompts,setLoadingPrompts]=useState(false);
-  const[showType,setShowType]=useState(false);
-
-  const displayText=tailoredText||item.text;
-  const has=(value||"").trim().length>0;
-  const pct=Math.round(((itemIdx+1)/total)*100);
-  const isLast=itemIdx===total-1;
-  const isSubQ=item.type==="sub";
-
-  const{on,interim,start,stop,supported}=useVoice(t=>{
-    textRef.current=(textRef.current+" "+t).trim();
-    onChange(textRef.current);
-  });
-
-  useEffect(()=>{textRef.current=value||"";},[value]);
-
-  function handleNext(){
-    if(isTooShort(value)){setTooShort(true);return;}
-    setTooShort(false);
-    onNext();
-  }
-
-  async function askAiPrompts(){
-    setLoadingPrompts(true);
-    try{
-      const txt=await callClaude(`Generate 3 follow-up prompts to help a ${biz?.industry||"business owner"} give a more detailed answer to this question:\n"${displayText}"\nReturn ONLY a JSON array of 3 strings: ["...","...","..."]`,400);
-      const cleaned=txt.replace(/```json/g,"").replace(/```/g,"").trim();
-      const first=cleaned.indexOf("[");const last=cleaned.lastIndexOf("]");
-      const arr=JSON.parse(cleaned.substring(first,last+1));
-      setPrompts(arr);
-    }catch{
-      setPrompts(["What specific examples can you share?","Can you include numbers, timeframes, or names?","What would you tell a new client about this?"]);
-    }
-    setLoadingPrompts(false);
-  }
-
-  return(
-    <div style={{minHeight:"100vh",background:B.bg,display:"flex",flexDirection:"column"}}>
-      <Header bizName={biz?.name}/>
-      <div style={{flex:1,padding:"28px 16px",maxWidth:680,margin:"0 auto",width:"100%"}}>
-        {/* Progress */}
-        <div style={{marginBottom:18}}>
-          <div style={{display:"flex",justifyContent:"space-between",color:B.gold,fontSize:12,marginBottom:6,fontWeight:600}}>
-            <span>{item.sectionTitle}</span>
-            <span>Prompt {itemIdx+1} of {total} · {pct}%</span>
-          </div>
-          <div style={{background:B.mid,borderRadius:99,height:6}}>
-            <div style={{background:B.rust,width:`${pct}%`,height:6,borderRadius:99,transition:"width .4s"}}/>
-          </div>
-        </div>
-
-        <div style={cardS}>
-          {/* Tag + type badge */}
-          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
-            <span style={{fontSize:18}}>{item.tag}</span>
-            <span style={{fontSize:11,fontWeight:800,letterSpacing:1,color:B.gold,textTransform:"uppercase"}}>{item.tagLabel}</span>
-            {isSubQ&&(
-              <span style={{marginLeft:"auto",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99,background:B.mid,color:B.rust,border:`1px solid ${B.rust}`}}>Follow-Up Question</span>
-            )}
-          </div>
-
-          {/* Question text */}
-          <h2 style={{color:B.sand,fontSize:19,fontWeight:900,lineHeight:1.55,margin:"0 0 20px"}}>{displayText}</h2>
-
-          {/* Voice controls */}
-          <div style={{textAlign:"center",marginBottom:20}}>
-            {on?(
-              <div>
-                <div style={{position:"relative",width:80,height:80,margin:"0 auto 10px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <div style={{position:"absolute",width:80,height:80,borderRadius:"50%",background:`${B.rust}22`,animation:"pulse 1.5s ease-out infinite"}}/>
-                  <div style={{position:"absolute",width:60,height:60,borderRadius:"50%",background:`${B.rust}33`,animation:"pulse 1.5s ease-out .35s infinite"}}/>
-                  <div style={{width:48,height:48,borderRadius:"50%",background:B.rust,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1,fontSize:22}}>🎙️</div>
-                </div>
-                <p style={{color:B.rust,fontWeight:800,fontSize:13,margin:"0 0 6px"}}>Listening… speak naturally</p>
-                {interim&&<p style={{color:B.gold,fontSize:12,fontStyle:"italic",maxWidth:400,margin:"0 auto 10px",lineHeight:1.5}}>{interim}</p>}
-                <button onClick={stop} style={{padding:"8px 24px",background:B.mid,color:B.sand,border:`1px solid ${B.border}`,borderRadius:99,fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop Recording</button>
-              </div>
-            ):(
-              <div>
-                {supported?(
-                  <button onClick={start} style={{padding:"14px 40px",background:has?B.mid:B.rust,color:has?B.rust:B.white,border:has?`2px solid ${B.rust}`:"none",borderRadius:99,fontWeight:900,fontSize:16,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:10}}>
-                    🎙️ {has?"Add More":"Tap to Speak"}
-                  </button>
-                ):(
-                  <p style={{color:B.gold,fontSize:13}}>⚠️ Voice not supported in this browser — please type below.</p>
-                )}
-                <div style={{marginTop:8}}>
-                  <button onClick={()=>setShowType(!showType)} style={{background:"none",border:"none",color:B.border,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
-                    {showType?"Hide keyboard":"Prefer to type?"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Text area */}
-          {(showType||has)&&(
-            <div style={{marginBottom:8}}>
-              <div style={{fontSize:11,color:B.gold,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{has?"Your response (edit if needed):":"Type your answer:"}</div>
-              <textarea
-                style={{width:"100%",minHeight:120,background:B.mid,border:`1px solid ${tooShort?B.rust:B.border}`,borderRadius:8,padding:12,fontSize:14,fontFamily:"inherit",color:B.sand,resize:"vertical",boxSizing:"border-box",lineHeight:1.7}}
-                placeholder="Speak or type here…"
-                value={value||""}
-                onChange={e=>{textRef.current=e.target.value;onChange(e.target.value);setTooShort(false);}}
-              />
-              <div style={{fontSize:11,color:(value||"").trim().length>=MIN_CHARS?B.gold:B.border,marginTop:3,textAlign:"right"}}>
-                {(value||"").trim().length} / {MIN_CHARS} characters minimum
-              </div>
-            </div>
-          )}
-
-          {/* Tell me more warning */}
-          {tooShort&&(
-            <div style={{background:"#3a0a0a",border:`1px solid ${B.rust}`,borderRadius:8,padding:12,marginBottom:14}}>
-              <div style={{color:B.rust,fontWeight:800,fontSize:13,marginBottom:4}}>⚠️ Tell me more — include specifics (numbers, roles, tools, examples).</div>
-              <div style={{color:B.sand,fontSize:12,marginBottom:8}}>We need at least {MIN_CHARS} characters to build an accurate proposal from your answer.</div>
-              <button
-                onClick={askAiPrompts}
-                disabled={loadingPrompts}
-                style={{padding:"6px 16px",background:B.mid,color:B.gold,border:`1px solid ${B.gold}`,borderRadius:8,fontSize:12,fontWeight:700,cursor:loadingPrompts?"wait":"pointer"}}
-              >
-                {loadingPrompts?"Generating…":"🤖 Ask AI to prompt me"}
-              </button>
-              {prompts.length>0&&(
-                <div style={{marginTop:10}}>
-                  {prompts.map((p,i)=>(
-                    <div key={i} style={{display:"flex",gap:8,marginBottom:6,color:B.sand,fontSize:13,lineHeight:1.6}}>
-                      <span style={{color:B.rust,fontWeight:900,flexShrink:0}}>→</span><span>{p}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div style={{display:"flex",gap:8,marginTop:4}}>
-            {itemIdx>0&&(
-              <button onClick={onBack} style={{flex:1,padding:"12px 0",background:B.mid,color:B.sand,border:`1px solid ${B.border}`,borderRadius:8,fontWeight:700,fontSize:14,cursor:"pointer"}}>← Back</button>
-            )}
-            <button onClick={onPause} style={{padding:"12px 18px",background:B.mid,color:B.gold,border:`1px solid ${B.gold}`,borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer"}}>⏸ Pause</button>
-            <RBtn onClick={handleNext} style={{flex:2}}>{isLast?"Submit & Generate Report →":"Next →"}</RBtn>
-          </div>
-
-          {/* Proposal tiles */}
-          <div style={{marginTop:16,paddingTop:12,borderTop:`1px solid ${B.border}`}}>
-            <div style={{fontSize:11,color:B.border,marginBottom:5}}>Feeds into proposal documents:</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-              {item.docs.map(d=><span key={d} style={{background:B.mid,color:B.gold,fontSize:11,padding:"3px 10px",borderRadius:99,border:`1px solid ${B.border}`}}>{d}</span>)}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── REPORT ────────────────────────────────────────────────────────────────
-function Report({report,biz,social,answers,submitted}){
-  const[tab,setTab]=useState("summary");
-  const score=report.proposalReadiness?.score||0;
-  const scoreCol=score>=7?B.rust:score>=4?B.gold:"#dc2626";
-
-  function copyReport(){
-    let out=`915 GYPSY LLC — PROCUREMENT CAPABILITY DUMP™\n${"═".repeat(50)}\n`;
-    out+=`Company: ${biz.name}\nIndustry: ${biz.industry}\nType: ${biz.bizType}\nDate: ${new Date().toLocaleDateString()}\n`;
-    if(social.website)out+=`Website: ${social.website}\n`;
-    out+=`Proposal Readiness Score: ${score}/10\n\nASSESSMENT\n${report.proposalReadiness?.summary}\n\n`;
-    out+=`CAN DO\n${report.canDo?.map(c=>`• ${c.item}\n  ${c.evidence}`).join("\n\n")}\n\n`;
-    out+=`CANNOT DO\n${report.cannotDo?.map(c=>`• ${c.item}\n  ${c.reason}`).join("\n\n")}\n\n`;
-    out+=`CONDITIONAL\n${report.conditional?.map(c=>`• ${c.item}\n  Only if: ${c.condition}`).join("\n\n")}\n\n`;
-    out+=`FLAGS\n${report.flags?.map(f=>`[${f.type.toUpperCase()}] ${f.description}`).join("\n")}\n\n`;
-    out+=`TILE READINESS\n${report.tileMapping?.map(t=>`${(t.status||"").toUpperCase().padEnd(12)} ${t.tile}: ${t.note}`).join("\n")}\n\n`;
-    out+=`FULL ANSWERS\n${"─".repeat(40)}\n`;
-    SECTIONS.forEach(sec=>{
-      out+=`\nSECTION ${sec.id}: ${sec.title.toUpperCase()}\n`;
-      sec.questions.forEach(q=>{
-        const a=answers[q.id];
-        if(!a) return;
-        out+=`\nQ${q.id}: ${q.base}\nMAIN: ${a.main||""}\n`;
-        q.subs.forEach((s,i)=>{out+=`SUB ${i+1}: ${s}\n${(a.subs&&a.subs[i])||""}\n`;});
-      });
-    });
-    out+=`\n© 915 Gypsy LLC · Procurement Capability Dump™ · All rights reserved`;
-    navigator.clipboard.writeText(out).catch(()=>{});
-    alert("Full report copied to clipboard!");
-  }
-
-  const tabs=["summary","capabilities","tiles","answers"];
-  const tabLabel={summary:"📊 Summary",capabilities:"✅ Capabilities",tiles:"📁 Tile Readiness",answers:"📝 Full Answers"};
-
-  return(
-    <div style={{minHeight:"100vh",background:B.bg,display:"flex",flexDirection:"column"}}>
-      <Header bizName={biz.name}/>
-      <div style={{flex:1,padding:"28px 16px",maxWidth:740,margin:"0 auto",width:"100%"}}>
-        {submitted?(
-          <div style={{background:"#1a3a0c",border:"1px solid #4a8a2a",borderRadius:10,padding:14,marginBottom:20,display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:20}}>✅</span>
-            <div>
-              <div style={{color:"#8adf4a",fontWeight:800,fontSize:13}}>Successfully submitted to 915 Gypsy</div>
-              <div style={{color:"#6ab52a",fontSize:12}}>Jesse will review your Capability Dump and be in touch.</div>
-            </div>
-          </div>
-        ):(
-          <div style={{background:B.mid,border:`1px solid ${B.gold}`,borderRadius:10,padding:14,marginBottom:20,display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:20}}>⚠️</span>
-            <div style={{color:B.gold,fontSize:13}}>Submission to 915 Gypsy could not be confirmed. Use the Copy Report button to save your results.</div>
-          </div>
-        )}
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{width:60,height:3,background:B.rust,margin:"0 auto 16px",borderRadius:2}}/>
-          <h1 style={{color:B.sand,fontSize:22,fontWeight:900,margin:"0 0 6px"}}>Capability Summary Report</h1>
-          <p style={{color:B.gold,fontSize:13,margin:"0 0 14px"}}>{biz.name} · {biz.industry} · {biz.bizType}</p>
-          <div style={{display:"inline-block",background:B.card,border:`2px solid ${scoreCol}`,borderRadius:99,padding:"6px 28px",marginBottom:14}}>
-            <span style={{fontSize:15,fontWeight:900,color:scoreCol}}>Proposal Readiness: {score}/10</span>
-          </div>
-          <div><button onClick={copyReport} style={{padding:"8px 22px",background:B.mid,color:B.gold,border:`1px solid ${B.gold}`,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>📋 Copy Full Report</button></div>
-        </div>
-        <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
-          {tabs.map(t=><button key={t} onClick={()=>setTab(t)} style={{padding:"8px 16px",borderRadius:99,border:"1px solid",fontSize:13,fontWeight:700,cursor:"pointer",background:tab===t?B.rust:B.card,color:tab===t?B.white:B.gold,borderColor:tab===t?B.rust:B.border}}>{tabLabel[t]}</button>)}
-        </div>
-
-        {tab==="summary"&&(
-          <div style={{display:"grid",gap:16}}>
-            <div style={cardS}>
-              <h3 style={{color:B.sand,fontWeight:800,fontSize:15,marginBottom:10}}>Assessment</h3>
-              <p style={{color:B.gold,fontSize:14,lineHeight:1.8,margin:0}}>{report.proposalReadiness?.summary}</p>
-            </div>
-            {report.flags?.length>0&&(
-              <div style={cardS}>
-                <h3 style={{color:B.sand,fontWeight:800,fontSize:15,marginBottom:14}}>Flags & Findings</h3>
-                {report.flags.map((f,i)=>(
-                  <div key={i} style={{display:"flex",gap:10,marginBottom:10,padding:12,borderRadius:8,background:B.mid,borderLeft:`3px solid ${f.type==="risk"?"#dc2626":f.type==="gap"?B.gold:B.rust}`}}>
-                    <span style={{fontSize:16}}>{f.type==="risk"?"🚨":f.type==="gap"?"⚠️":"💡"}</span>
-                    <div>
-                      <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",color:f.type==="risk"?"#dc2626":f.type==="gap"?B.gold:B.rust,marginBottom:3}}>{f.type}</div>
-                      <p style={{margin:0,fontSize:13,color:B.sand,lineHeight:1.6}}>{f.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab==="capabilities"&&(
-          <div style={{display:"grid",gap:16}}>
-            {[
-              {label:"✅ CAN DO",items:report.canDo,accent:B.rust,sub:c=>c.evidence},
-              {label:"🚫 CANNOT DO",items:report.cannotDo,accent:"#dc2626",sub:c=>c.reason},
-              {label:"⚠️ CONDITIONAL",items:report.conditional,accent:B.gold,sub:c=>`Only if: ${c.condition}`}
-            ].map(({label,items,accent,sub})=>(
-              <div key={label} style={{...cardS,borderLeft:`4px solid ${accent}`}}>
-                <h3 style={{color:B.sand,fontWeight:900,marginBottom:14,fontSize:15}}>{label}</h3>
-                {items?.length?items.map((c,i)=>(
-                  <div key={i} style={{marginBottom:10,paddingBottom:10,borderBottom:i<items.length-1?`1px solid ${B.border}`:"none"}}>
-                    <div style={{fontWeight:800,color:B.sand,fontSize:14}}>{c.item}</div>
-                    <div style={{color:B.gold,fontSize:13,marginTop:3,lineHeight:1.6}}>{sub(c)}</div>
-                  </div>
-                )):<div style={{color:B.border,fontSize:13}}>None identified</div>}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {tab==="tiles"&&(
-          <div style={cardS}>
-            <h3 style={{color:B.sand,fontWeight:800,fontSize:15,marginBottom:16}}>Proposal Tile Readiness</h3>
-            {report.tileMapping?.map((t,i)=>{
-              const c=t.status==="ready"?B.rust:t.status==="needs work"?B.gold:"#dc2626";
-              return(
-                <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:i<report.tileMapping.length-1?`1px solid ${B.border}`:"none"}}>
-                  <span style={{fontSize:11,fontWeight:800,padding:"3px 10px",borderRadius:99,background:B.mid,color:c,border:`1px solid ${c}`,flexShrink:0,whiteSpace:"nowrap",marginTop:2}}>{(t.status||"").toUpperCase()}</span>
-                  <div>
-                    <div style={{fontWeight:800,fontSize:14,color:B.sand}}>{t.tile}</div>
-                    <div style={{fontSize:13,color:B.gold,marginTop:2,lineHeight:1.5}}>{t.note}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {tab==="answers"&&(
-          <div>
-            {SECTIONS.map(sec=>(
-              <div key={sec.id} style={{marginBottom:22}}>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-                  <div style={{height:2,flex:1,background:B.rust,borderRadius:1}}/>
-                  <h3 style={{fontSize:11,fontWeight:800,letterSpacing:1.5,color:B.rust,textTransform:"uppercase",margin:0,whiteSpace:"nowrap"}}>Section {sec.id}: {sec.title}</h3>
-                  <div style={{height:2,flex:1,background:B.rust,borderRadius:1}}/>
-                </div>
-                {sec.questions.map(q=>{
-                  const a=answers[q.id];
-                  if(!a) return null;
-                  return(
-                    <div key={q.id} style={{...cardS,marginBottom:10}}>
-                      <div style={{fontSize:11,color:B.border,marginBottom:4}}>{q.tag} Q{q.id} — {q.tagLabel}</div>
-                      <div style={{fontWeight:700,fontSize:13,color:B.gold,marginBottom:6}}>{q.base}</div>
-                      <div style={{fontSize:14,color:B.sand,lineHeight:1.8,whiteSpace:"pre-wrap",marginBottom:a.subs?.length?10:0}}>{a.main}</div>
-                      {q.subs.map((s,i)=>(
-                        <div key={i} style={{background:B.mid,borderRadius:8,padding:10,marginTop:8}}>
-                          <div style={{fontSize:11,color:B.rust,fontWeight:800,marginBottom:4}}>→ {s}</div>
-                          <div style={{fontSize:13,color:B.sand,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{(a.subs&&a.subs[i])||""}</div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div style={{marginTop:28,padding:14,background:B.card,borderRadius:10,border:`1px solid ${B.border}`,textAlign:"center"}}>
-          <Logo size={28}/>
-          <p style={{color:B.border,fontSize:11,margin:"8px 0 0"}}>© 915 Gypsy LLC · Procurement Capability Dump™ is a proprietary diagnostic tool · All rights reserved</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── LOADING SCREEN ────────────────────────────────────────────────────────
-function Loading({msg}){
-  return(
-    <div style={{minHeight:"100vh",background:B.bg,display:"flex",flexDirection:"column"}}>
-      <Header/>
-      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:20}}>
-        <div style={{width:44,height:44,border:`4px solid ${B.border}`,borderTop:`4px solid ${B.rust}`,borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
-        <p style={{color:B.sand,fontSize:15,textAlign:"center",maxWidth:340,lineHeight:1.8}}>{msg}</p>
-      </div>
-    </div>
-  );
-}
-
-// ─── APP ───────────────────────────────────────────────────────────────────
-function App(){
-  const[stage,setStage]=useState("onboard");
-  const[biz,setBiz]=useState(null);
-  const[social,setSocial]=useState({});
-  // tailored: { [qId]: { main:"", subs:["",""] } }
-  const[tailored,setTailored]=useState({});
-  // answers: { [qId]: { main:"", subs:["",""] } }
-  const[answers,setAnswers]=useState({});
-  // itemIdx: index into ALL_ITEMS flat array
-  const[itemIdx,setItemIdx]=useState(0);
-  const[report,setReport]=useState(null);
-  const[submitted,setSubmitted]=useState(false);
-  const[loadMsg,setLoadMsg]=useState("");
-  const[savedSession,setSavedSession]=useState(null);
-
-  // On mount, check for saved session
-  useEffect(()=>{
-    try{
-      const raw=localStorage.getItem(LS_KEY);
-      if(raw){
-        const s=JSON.parse(raw);
-        if(s.biz&&s.stage==="interview") setSavedSession(s);
-      }
-    }catch{}
-  },[]);
-
-  function saveSession(overrides={}){
-    const s={stage,biz,social,tailored,answers,itemIdx,...overrides};
-    try{localStorage.setItem(LS_KEY,JSON.stringify(s));}catch{}
-  }
-
-  function handleResume(){
-    const s=savedSession;
-    setBiz(s.biz);setSocial(s.social||{});setTailored(s.tailored||{});
-    setAnswers(s.answers||{});setItemIdx(s.itemIdx||0);
-    setSavedSession(null);setStage("interview");
-  }
-
-  async function handleStart(bizInfo,socialInfo){
-    setBiz(bizInfo);setSocial(socialInfo);
-    setStage("tailoring");
-    setLoadMsg(`Tailoring your ${TOTAL} prompts for a ${bizInfo.industry} company…`);
-    const result={};
-    for(const q of ALL_Q){
-      result[q.id]=await tailorQuestion(q.base,q.subs,bizInfo.industry,bizInfo.bizType,q.id);
-    }
-    setTailored(result);
-    setStage("interview");
-    localStorage.removeItem(LS_KEY);
-  }
-
-  // Get current value for this item from answers
-  function getItemValue(item){
-    const a=answers[item.qId];
-    if(!a) return "";
-    if(item.type==="main") return a.main||"";
-    return (a.subs&&a.subs[item.subIdx])||"";
-  }
-
-  function setItemValue(item,val){
-    setAnswers(prev=>{
-      const a={...(prev[item.qId]||{main:"",subs:[]})};
-      if(item.type==="main"){
-        a.main=val;
-      } else {
-        const subs=[...(a.subs||[])];
-        subs[item.subIdx]=val;
-        a.subs=subs;
-      }
-      return {...prev,[item.qId]:a};
-    });
-  }
-
-  function handlePause(){
-    saveSession({stage:"interview",itemIdx,answers,tailored,biz,social});
-    alert("Progress saved! You can close this tab and resume later.");
-  }
-
-  async function handleNext(){
-    if(itemIdx<ALL_ITEMS.length-1){
-      const nextIdx=itemIdx+1;
-      setItemIdx(nextIdx);
-      saveSession({itemIdx:nextIdx});
-      return;
-    }
-    // Last item — generate report
-    setStage("generating");
-    setLoadMsg("Analyzing your responses and building your Capability Summary Report…");
-    let r;
-    try{
-      r=await buildReport(answers,biz);
-    }catch{
-      r={
-        canDo:[],cannotDo:[],conditional:[],
-        flags:[{type:"gap",description:"Report generation encountered an error. Your answers have been captured — please use Copy Report to save them."}],
-        proposalReadiness:{score:0,summary:"Report generation failed. Your raw answers are available in the Full Answers tab."},
-        tileMapping:[{tile:"All Tiles",status:"needs work",note:"Manual review required"}]
-      };
-    }
-    setReport(r);
-    setLoadMsg("Submitting your report to 915 Gypsy…");
-    let ok=false;
-    try{ok=await submitToAirtable(biz,social,answers,r);}catch{}
-    setSubmitted(ok);
-    localStorage.removeItem(LS_KEY);
-    setStage("report");
-  }
-
-  // Get tailored text for current item
-  function getTailoredText(item){
-    const t=tailored[item.qId];
-    if(!t) return item.text;
-    if(item.type==="main") return t.main||item.text;
-    return (t.subs&&t.subs[item.subIdx])||item.text;
-  }
-
-  const curItem=ALL_ITEMS[itemIdx];
-
-  if(stage==="onboard")return(
-    <Onboarding
-      onStart={handleStart}
-      savedSession={savedSession}
-      onResume={handleResume}
-    />
-  );
-  if(stage==="tailoring"||stage==="generating")return <Loading msg={loadMsg}/>;
-  if(stage==="interview"&&curItem)return(
-    <QuestionScreen
-      item={curItem}
-      tailoredText={getTailoredText(curItem)}
-      value={getItemValue(curItem)}
-      onChange={val=>setItemValue(curItem,val)}
-      onNext={handleNext}
-      onBack={()=>setItemIdx(Math.max(0,itemIdx-1))}
-      onPause={handlePause}
-      itemIdx={itemIdx}
-      total={TOTAL}
-      biz={biz}
-    />
-  );
-  if(stage==="report"&&report)return(
-    <Report report={report} biz={biz} social={social} answers={answers} submitted={submitted}/>
-  );
-  return null;
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
-</script>
-</body>
-</html>
-TYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>915 Gypsy — Procurement Capability Dump™</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-
-<!-- ============================================================
-     CONFIGURATION — Edit these values before deploying
-     ============================================================ -->
-<script>
-  // ✅ SECURE: No API keys here. All API calls are routed through
-  // Netlify serverless functions (netlify/functions/claude.js and
-  // netlify/functions/airtable.js) where keys are stored safely<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>915 Gypsy — Procurement Capability Dump™</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:system-ui,-apple-system,sans-serif;background:#2B0F06;}
-  select option{background:#2B0F06;color:#E6C88F;}
-  ::-webkit-scrollbar{width:6px;}
-  ::-webkit-scrollbar-track{background:#2B0F06;}
-  ::-webkit-scrollbar-thumb{background:#6b3a1f;border-radius:3px;}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  @keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(2.2);opacity:0}}
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script type="text/babel">
-const {useState,useRef,useEffect,useCallback}=React;
-
-// ─── BRAND COLORS ──────────────────────────────────────────────────────────
-const B={bg:"#2B0F06",rust:"#C4551C",sand:"#E6C88F",gold:"#D4B072",card:"#3a1a0c",mid:"#4a2510",border:"#6b3a1f",white:"#ffffff"};
-const LOGO="https://img1.wsimg.com/isteam/ip/24c22cb3-fef9-4b59-9955-fb4483f9ade0/915%20Gypsy.png/:/rs=w:260,h:260,cg:true,m/cr=w:260,h:260";
-
-// ─── NETLIFY ENDPOINTS ─────────────────────────────────────────────────────
-const CLAUDE_ENDPOINT="/.netlify/functions/claude";
-const AIRTABLE_ENDPOINT="/.netlify/functions/airtable";
-
-// ─── AIRTABLE CONFIG ───────────────────────────────────────────────────────
-const AT_BASE="app88aYwbI34Soaiz";
-const AT_TABLE="tbltv5EKv5D6wjPwu";
-const AT_FIELDS={
-  name:"fldFjQf3NgdBynjlm",industry:"fld6s42MwLWsGJUuB",bizType:"fldgESTkatKW2iJwR",
-  date:"fldHe1440gjGG1dUI",website:"fldfhM0wz46iMSlDH",linkedin:"fldXtiYvoInxJnvYA",
-  facebook:"fldrvDOszqORWWxcD",instagram:"fldbgI4KuiLeE7chW",tiktok:"fld2u7NMXbw5QQ5hn",
-  youtube:"fldkjzY6tF9XqKHrn",other:"fldPbLVHBU5zVo3mT",s1:"fldJLGYDBdd7TE5Qc",
-  s2:"fldyAKP1BFOFinJ9w",s3:"fldoTS3z5L4GIdTKP",s4:"fldRBlvJeCQw5UAWw",
-  s5:"fldza8UrVcNJYUSTa",s6:"fldUbGRkY37C0gyn0",s7:"fldTAzjX236E9jnae",
-  s8:"fldJrrE3BAlpMAzlE",s9:"fldTUgLWdtuDjMPhQ",s10:"fldWYBdW6CMosyGD2",
-  s11:"fldRWWNm128SNJ70D",canDo:"fldetonFG7lf6Okst",cannotDo:"fldQrlY4ayiyTHP7e",
-  conditional:"fldZQc0XS8J9eNaYv",flags:"fldxKRaD7O2MiQCJB",score:"fldaP3y31VARHPyag",
-  tiles:"fldVfBpkioVI0TAlC"
-};
-const SEC_FIELD={1:"s1",2:"s2",3:"s3",4:"s4",5:"s5",6:"s6",7:"s7",8:"s8",9:"s9",10:"s10",11:"s11"};
-
-// ─── MINIMUM ANSWER THRESHOLD ──────────────────────────────────────────────
-const MIN_CHARS=150;
-function isTooShort(val){return !val||val.trim().length<MIN_CHARS;}
-
-// ─── SECTIONS & QUESTIONS ─────────────────────────────────────────────────
-// Each question has: id, base (main question text), subs (array of sub-questions),
-// docs (proposal tiles), tag, tagLabel.
-// ALL subs are treated as required separate inputs.
-const SECTIONS=[
-  {id:1,title:"Business Identity & Legal Framework",questions:[
-    {id:1,base:"What is your complete business identity as it exists today?",subs:["How is the business legally structured, and how does that influence your operations?","What licenses, registrations, or credentials are currently active (SAM.gov, CMBL, HUB, insurance, etc.)?"],docs:["Capability Statement","SAM/DSBS Profile","Compliance Attachments"],tag:"🟩",tagLabel:"Core Foundation"},
-    {id:2,base:"What specific services are you legally and safely authorized to perform?",subs:["Where do your licenses stop?","Are there any licenses or registrations you are currently pursuing?"],docs:["Technical Approach","Licensure Documentation","Capability Statement"],tag:"🟥",tagLabel:"Compliance Boundary"}
-  ]},
-  {id:2,title:"Scope of Work: What You Do & Do Not Do",questions:[
-    {id:3,base:"If someone asked 'What exactly does your company DO?' — what is your clear, confident answer?",subs:["What are the three core services you perform consistently?","What services do people assume you do, but you actually don't?"],docs:["Core Competencies","Technical Approach","SAM Profile"],tag:"🟩",tagLabel:"Core Capability"},
-    {id:4,base:"What work do you absolutely NOT perform under any circumstance?",subs:["Why don't you perform this work — licensing, safety, cost, risk?","If a contract requires this task, would you decline or subcontract?"],docs:["Assumptions/Limitations","Technical Approach","Risk Plan"],tag:"🟥",tagLabel:"Hidden Risk"},
-    {id:5,base:"What tasks fall in the conditional category — where you can do them, but only under certain situations?",subs:["What conditions must be met for you to say yes?","What conditions cause an automatic no-bid?"],docs:["Technical Approach","Pricing Narrative","Risk Mitigation"],tag:"🟧",tagLabel:"Operational Constraint"}
-  ]},
-  {id:3,title:"Throughput, Capacity & Operational Limits",questions:[
-    {id:6,base:"What is your real operational throughput — the volume of work you can complete in a day, week, and month?",subs:["What limits your throughput — people, equipment, supply chain, weather?","What is the difference between your normal load and your maximum safe load?"],docs:["Technical Approach","Production Rate","Staffing Plan"],tag:"⚙️",tagLabel:"Operational Bottleneck"},
-    {id:7,base:"What is the largest project you've successfully completed, and what made it work?",subs:["What factors allowed that scale?","Could you repeat that same project today?"],docs:["Past Performance","Experience Narrative","Capability Statement"],tag:"⭐",tagLabel:"Proven Capability"},
-    {id:8,base:"What projects are too large for you right now, and why?",subs:["Is the limitation size, duration, crew count, or cash flow?","What would need to change to take on work at that scale?"],docs:["Risk Plan","Assumptions","Go/No-Go Guidance"],tag:"🟥",tagLabel:"Capacity Risk"},
-    {id:9,base:"If demand doubled or tripled in 30 days, what would break first in your operations?",subs:["What part of your workflow would bottleneck immediately?","What people, processes, or equipment would you need to prevent that breakdown?"],docs:["Risk Mitigation","Contingency Plan","Staffing Strategy"],tag:"🟧",tagLabel:"System Stress Test"}
-  ]},
-  {id:4,title:"People, Crew, Qualifications & Structure",questions:[
-    {id:10,base:"Who performs the work — what roles, certifications, and skill levels exist within your team?",subs:["Who is cross-trained versus highly specialized?","Who holds certifications or licenses, and for what tasks?"],docs:["Staffing Plan","Qualifications Matrix","Org Chart"],tag:"🟩",tagLabel:"Human Capital Strength"},
-    {id:11,base:"Who is your strongest or most reliable team, and why do you trust them with your most important jobs?",subs:["How do you assign jobs based on skills?","Who steps in if key personnel are unavailable?"],docs:["Management Plan","Key Personnel Resumes","Past Performance"],tag:"⭐",tagLabel:"Operational Differentiator"},
-    {id:12,base:"Are you currently understaffed, overstaffed, or staffed appropriately for the contracts you want to pursue?",subs:["How quickly can you onboard new team members?","What training gaps exist today?"],docs:["Staffing Plan","Ramp-Up Plan","Workload Projections"],tag:"🟧",tagLabel:"Workforce Constraint"}
-  ]},
-  {id:5,title:"Equipment, Fleet, Materials & Resources",questions:[
-    {id:13,base:"What equipment, tools, vehicles, and assets do you own or have guaranteed access to?",subs:["Which assets are most essential to your core services?","Which assets become bottlenecks when demand increases?"],docs:["Equipment List","Technical Approach","Production Rate"],tag:"🧰",tagLabel:"Asset Capability Profile"},
-    {id:14,base:"What materials or supplies do you rely on heavily, and what supply chain constraints affect you?",subs:["Do you procure materials in bulk or job-by-job?","Which vendors or suppliers are most reliable?"],docs:["Technical Approach","Contingency Plan","Schedule"],tag:"🔧",tagLabel:"Supply Chain Stability"}
-  ]},
-  {id:6,title:"Safety, QA/QC, Compliance & Risk Management",questions:[
-    {id:15,base:"What safety practices, logs, certifications, or protocols do you maintain?",subs:["Who is responsible for managing safety compliance?","How is safety documented — digital, paper logs, or nothing yet?"],docs:["Safety Plan","Compliance Attachments","QA/QC"],tag:"🟥",tagLabel:"Compliance Risk"},
-    {id:16,base:"What quality control steps do you always complete before finalizing a job?",subs:["Who performs final checks?","What documentation confirms quality?"],docs:["QA/QC Plan","Technical Approach","Performance Metrics"],tag:"🟩",tagLabel:"Performance Reliability"},
-    {id:17,base:"What risks do you actively avoid because they threaten performance, safety, or compliance?",subs:["What risks have caused problems in the past?","How do you determine when a risk is too high?"],docs:["Risk Plan","Assumptions","Go/No-Go Criteria"],tag:"🟥",tagLabel:"Risk Boundary"}
-  ]},
-  {id:7,title:"Financial Readiness, Pricing & Cash Flow",questions:[
-    {id:18,base:"How do you price your work, and what logic or methodology guides your pricing?",subs:["How do you calculate labor, materials, markup, and contingencies?","Do you use a standard rate sheet?"],docs:["Pricing Narrative","Budget","Cost Breakdown"],tag:"💲",tagLabel:"Financial Capability"},
-    {id:19,base:"What financial constraints impact your ability to take on larger projects?",subs:["Cash flow, credit, payroll cycles, equipment financing?","How many days can you float payroll on a new contract?"],docs:["Ramp-Up Plan","Pricing Assumptions","Financial Capacity"],tag:"⚠️",tagLabel:"Performance Risk"}
-  ]},
-  {id:8,title:"Technology, Systems & AI Readiness",questions:[
-    {id:20,base:"What systems run your business today — scheduling, dispatch, billing, proposals, safety?",subs:["Are these systems digital or manual?","Who on your team knows how to use each system?"],docs:["Management Plan","QA/QC","Workflow Narrative"],tag:"💻",tagLabel:"Digital Maturity"},
-    {id:21,base:"What technology should your industry be using today, and have you adopted it?",subs:["What tools are competitors using that you are not?","What technology gaps slow you down?"],docs:["Technical Approach","Capability Statement"],tag:"⚙️",tagLabel:"Competitive Gap"},
-    {id:22,base:"Are you currently using any form of AI in your business?",subs:["If yes, for what tasks?","If no, what concerns or barriers exist?"],docs:["Proposal Generation","Workflow Narrative"],tag:"🤖",tagLabel:"Automation Readiness"},
-    {id:23,base:"If you could automate three tasks tomorrow, what would they be and why?",subs:["What tasks feel repetitive or prone to delay?","What tasks create the most friction or errors?"],docs:["Management Plan","Efficiency Plan"],tag:"🔧",tagLabel:"Process Improvement"}
-  ]},
-  {id:9,title:"Past Performance, References & Client Experience",questions:[
-    {id:24,base:"What past jobs best represent the type of work you want to win in the future?",subs:["Why are these projects strong examples of your capabilities?","What measurable results or outcomes support this?"],docs:["Past Performance","Technical Approach","DSBS Narrative"],tag:"⭐",tagLabel:"Evidence of Capability"}
-  ]},
-  {id:10,title:"Subcontractors, Partners & Teaming",questions:[
-    {id:25,base:"Who do you subcontract to, and for what tasks?",subs:["How do you vet or qualify subcontractors?","What work do you refuse to subcontract?"],docs:["Subcontracting Plan","Technical Approach","Risk Plan"],tag:"🤝",tagLabel:"Teaming Structure"}
-  ]},
-  {id:11,title:"Risk Boundaries, No-Go Conditions & Decision Rules",questions:[
-    {id:26,base:"What forces an automatic no-bid decision for your company?",subs:["What red flags signal that a job is not a good fit?","What past experiences shaped these boundaries?"],docs:["Go/No-Go Criteria","Assumptions","Risk Management"],tag:"🚫",tagLabel:"Contract Risk Protection"}
-  ]}
-];
-
-// Flatten into individual prompt items: each question + each sub = separate items
-// item shape: { qId, type:"main"|"sub", subIdx?:number, text, tag, tagLabel, docs, sectionId }
-function buildFlatItems(sections){
-  const items=[];
-  sections.forEach(sec=>{
-    sec.questions.forEach(q=>{
-      items.push({qId:q.id,type:"main",text:q.base,tag:q.tag,tagLabel:q.tagLabel,docs:q.docs,sectionId:sec.id,sectionTitle:sec.title});
-      q.subs.forEach((s,i)=>{
-        items.push({qId:q.id,type:"sub",subIdx:i,text:s,tag:q.tag,tagLabel:q.tagLabel,docs:q.docs,sectionId:sec.id,sectionTitle:sec.title});
-      });
-    });
-  });
-  return items;
-}
-const ALL_ITEMS=buildFlatItems(SECTIONS);
-const ALL_Q=SECTIONS.flatMap(s=>s.questions);
-const TOTAL=ALL_ITEMS.length;
-
-const INDUSTRIES=["Roofing & Waterproofing","General Contracting","Electrical","Plumbing","HVAC","Landscaping & Grounds","Janitorial & Facilities","Construction Management","IT & Cybersecurity","Web & App Development","AI & Automation","Consulting & Professional Services","Workforce Development & Training","Staffing & Recruiting","Marketing & Creative","Accounting & Financial Services","Transportation & Logistics","Security Services","Healthcare Services","Other"];
-const BUSINESS_TYPES=["Service-Based","Product-Based","Product + Service","Subcontractor","Prime Contractor","Joint Venture","Nonprofit"];
-
-const LS_KEY="pcd_session_v2";
-
-// ─── SAFE JSON PARSE ───────────────────────────────────────────────────────
-function safeJsonParse(text){
-  if(!text||!text.trim()) throw new Error("Empty response");
-  let s=text.replace(/```json/g,"").replace(/```/g,"").trim();
-  const first=s.indexOf("{");
-  const last=s.lastIndexOf("}");
-  if(first===-1||last===-1) throw new Error("No JSON object found");
-  s=s.substring(first,last+1);
-  return JSON.parse(s);
-}
-
-// ─── API CALLS ─────────────────────────────────────────────────────────────
-async function callClaude(prompt,max=900){
-  const r=await fetch(CLAUDE_ENDPOINT,{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:max,messages:[{role:"user",content:prompt}]})
-  });
-  if(!r.ok) throw new Error(`Claude API error ${r.status}`);
-  const d=await r.json();
-  return(d.content?.map(b=>b.text||"").join("")||"").trim();
-}
-
-async function tailorQuestion(baseText,subs,industry,bizType,qNum){
-  try{
-    const txt=await callClaude(`Rewrite this procurement interview question for a ${industry} ${bizType} business. Keep same intent, make language specific to their trade. Return ONLY JSON: {"main":"...","subs":["...","..."]}
-Q${qNum}: ${baseText}
-Subs: ${subs.join(" | ")}`);
-    const parsed=safeJsonParse(txt);
-    if(!parsed.main||!Array.isArray(parsed.subs)) throw new Error("Bad shape");
-    return parsed;
-  }catch{return{main:baseText,subs};}
-}
-
-async function buildReport(answers,biz){
-  // Serialize answers: answers[qId] = { main:"...", subs:["...","..."] }
-  const lines=ALL_Q.map(q=>{
-    const a=answers[q.id];
-    if(!a) return null;
-    let out=`Q${q.id} MAIN (${q.tagLabel}):\n${a.main||""}`;
-    if(q.subs&&q.subs.length){
-      q.subs.forEach((s,i)=>{
-        out+=`\nQ${q.id} SUB ${i+1} — ${s}\n${(a.subs&&a.subs[i])||""}`;
-      });
-    }
-    return out;
-  }).filter(Boolean).join("\n\n─────\n\n");
-
-  const raw=await callClaude(`You are a procurement capability analyst for 915 Gypsy LLC. Analyze this small business interview.
-Business: ${biz.name} | Industry: ${biz.industry} | Type: ${biz.bizType}
-ANSWERS:\n${lines}
-Return ONLY valid JSON:
-{"canDo":[{"item":"...","evidence":"..."}],"cannotDo":[{"item":"...","reason":"..."}],"conditional":[{"item":"...","condition":"..."}],"flags":[{"type":"gap|risk|opportunity","description":"..."}],"proposalReadiness":{"score":5,"summary":"2-3 sentence assessment"},"tileMapping":[{"tile":"...","status":"ready|needs work|missing","note":"..."}]}
-tileMapping must include all 16: Corporate Documents, Capability Statement, Insurance, OSHA & Safety, Past Performance, Pricing, Project Portfolio, Compliance, Equipment & Fleet, Crew Qualifications, Financial Readiness, Bid Documents, Subcontractor Network, QA/QC Plan, Scheduling, AI & Technology`,1800);
-  return safeJsonParse(raw);
-}
-
-async function submitToAirtable(biz,social,answers,report){
-  const secAnswers={};
-  SECTIONS.forEach(sec=>{
-    const key=SEC_FIELD[sec.id];
-    const lines=sec.questions.map(q=>{
-      const a=answers[q.id];
-      if(!a) return null;
-      let out=`Q${q.id} — ${q.base}\nMAIN: ${a.main||""}`;
-      q.subs.forEach((s,i)=>{
-        out+=`\nSUB ${i+1}: ${s}\n${(a.subs&&a.subs[i])||""}`;
-      });
-      return out;
-    }).filter(Boolean);
-    if(lines.length) secAnswers[key]=lines.join("\n\n─────\n\n");
-  });
-
-  const fields={
-    [AT_FIELDS.name]:biz.name,
-    [AT_FIELDS.industry]:biz.industry,
-    [AT_FIELDS.bizType]:biz.bizType,
-    [AT_FIELDS.date]:new Date().toISOString().split("T")[0],
-    [AT_FIELDS.score]:report.proposalReadiness?.score||0,
-    [AT_FIELDS.canDo]:report.canDo?.map(c=>`✅ ${c.item}\n${c.evidence}`).join("\n\n")||"",
-    [AT_FIELDS.cannotDo]:report.cannotDo?.map(c=>`🚫 ${c.item}\n${c.reason}`).join("\n\n")||"",
-    [AT_FIELDS.conditional]:report.conditional?.map(c=>`⚠️ ${c.item}\nOnly if: ${c.condition}`).join("\n\n")||"",
-    [AT_FIELDS.flags]:report.flags?.map(f=>`[${f.type.toUpperCase()}] ${f.description}`).join("\n\n")||"",
-    [AT_FIELDS.tiles]:report.tileMapping?.map(t=>`${(t.status||"").toUpperCase()} — ${t.tile}: ${t.note}`).join("\n")||"",
-  };
-  if(social.website) fields[AT_FIELDS.website]=social.website;
-  if(social.linkedin) fields[AT_FIELDS.linkedin]=social.linkedin;
-  if(social.facebook) fields[AT_FIELDS.facebook]=social.facebook;
-  if(social.instagram) fields[AT_FIELDS.instagram]=social.instagram;
-  if(social.tiktok) fields[AT_FIELDS.tiktok]=social.tiktok;
-  if(social.youtube) fields[AT_FIELDS.youtube]=social.youtube;
-  if(social.other) fields[AT_FIELDS.other]=social.other;
-  Object.entries(secAnswers).forEach(([key,val])=>{fields[AT_FIELDS[key]]=val;});
-
-  const res=await fetch(AIRTABLE_ENDPOINT,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({baseId:AT_BASE,tableId:AT_TABLE,fields})
-  });
-  return res.ok;
-}
-
-// ─── VOICE HOOK ────────────────────────────────────────────────────────────
-function useVoice(onFinal){
-  const[on,setOn]=useState(false);
-  const[interim,setInterim]=useState("");
-  const ref=useRef(null);
-  const supported=typeof window!=="undefined"&&!!(window.SpeechRecognition||window.webkitSpeechRecognition);
-  function start(){
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    const r=new SR();r.continuous=true;r.interimResults=true;r.lang="en-US";
-    ref.current=r;
-    r.onresult=e=>{
-      let fin="",inter="";
-      for(let i=e.resultIndex;i<e.results.length;i++){
-        const t=e.results[i][0].transcript;
-        e.results[i].isFinal?fin+=t+" ":inter+=t;
-      }
-      if(fin)onFinal(fin);
-      setInterim(inter);
-    };
-    r.onend=()=>{setOn(false);setInterim("");};
-    r.start();setOn(true);
-  }
-  function stop(){ref.current?.stop();setOn(false);setInterim("");}
-  return{on,interim,start,stop,supported};
-}
-
-// ─── SHARED COMPONENTS ─────────────────────────────────────────────────────
-function Logo({size=44}){
-  const[err,setErr]=useState(false);
-  if(err)return React.createElement("span",{style:{color:B.sand,fontWeight:900,fontSize:20,letterSpacing:2}},"915 GYPSY");
-  return React.createElement("img",{src:LOGO,alt:"915 Gypsy",style:{height:size,width:"auto",objectFit:"contain",display:"block"},onError:()=>setErr(true)});
-}
-
-function Header({bizName}){
-  return(
-    <div style={{background:B.bg,borderBottom:`2px solid ${B.rust}`,padding:"10px 24px",display:"flex",alignItems:"center",gap:16,position:"sticky",top:0,zIndex:10}}>
-      <Logo size={38}/>
-      <div style={{width:1,height:28,background:B.border}}/>
-      <div>
-        <div style={{color:B.sand,fontWeight:800,fontSize:13,letterSpacing:.5}}>Procurement Capability Dump™</div>
-        {bizName&&<div style={{color:B.gold,fontSize:11}}>{bizName}</div>}
-      </div>
-      <div style={{marginLeft:"auto",fontSize:11,color:B.gold,fontStyle:"italic"}}>Proprietary · 915 Gypsy LLC</div>
-    </div>
-  );
-}
-
-const cardS={background:B.card,border:`1px solid ${B.border}`,borderRadius:14,padding:28};
-const inpS={width:"100%",padding:"10px 14px",background:B.mid,border:`1px solid ${B.border}`,borderRadius:8,fontSize:14,fontFamily:"inherit",color:B.sand,boxSizing:"border-box"};
-const lblS={display:"block",fontSize:11,fontWeight:700,color:B.gold,marginBottom:5,marginTop:14,letterSpacing:.5,textTransform:"uppercase"};
-
-function RBtn({children,onClick,disabled,full,style={}}){
-  return(
-    <button onClick={onClick} disabled={disabled} style={{padding:"12px 24px",background:disabled?B.mid:B.rust,color:disabled?"#9a7060":B.white,border:"none",borderRadius:8,fontWeight:800,fontSize:14,cursor:disabled?"not-allowed":"pointer",width:full?"100%":undefined,...style}}>
-      {children}
-    </button>
-  );
-}
-
-// ─── ONBOARDING ────────────────────────────────────────────────────────────
-function Onboarding({onStart,savedSession,onResume}){
-  const[biz,setBiz]=useState({name:"",industry:"",bizType:""});
-  const[social,setSocial]=useState({website:"",linkedin:"",facebook:"",instagram:"",tiktok:"",youtube:"",other:""});
-  const[showSocial,setShowSocial]=useState(false);
-  const valid=biz.name.trim()&&biz.industry&&biz.bizType;
-  const socials=[
-    {key:"website",label:"Website",placeholder:"https://yoursite.com"},
-    {key:"linkedin",label:"LinkedIn",placeholder:"https://linkedin.com/company/..."},
-    {key:"facebook",label:"Facebook",placeholder:"https://facebook.com/..."},
-    {key:"instagram",label:"Instagram",placeholder:"https://instagram.com/..."},
-    {key:"tiktok",label:"TikTok",placeholder:"https://tiktok.com/@..."},
-    {key:"youtube",label:"YouTube",placeholder:"https://youtube.com/..."},
-    {key:"other",label:"Other",placeholder:"Any other platform URL"},
-  ];
-  return(
-    <div style={{minHeight:"100vh",background:B.bg,display:"flex",flexDirection:"column"}}>
-      <Header/>
-      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 16px"}}>
-        <div style={{maxWidth:540,width:"100%"}}>
-          {/* Resume banner */}
-          {savedSession&&(
-            <div style={{background:B.card,border:`1px solid ${B.gold}`,borderRadius:10,padding:16,marginBottom:20,textAlign:"center"}}>
-              <div style={{color:B.gold,fontWeight:800,fontSize:14,marginBottom:8}}>🔖 You have a saved session — <em>{savedSession.biz?.name}</em></div>
-              <div style={{display:"flex",gap:10,justifyContent:"center"}}>
-                <button onClick={onResume} style={{padding:"8px 22px",background:B.rust,color:B.white,border:"none",borderRadius:8,fontWeight:800,fontSize:13,cursor:"pointer"}}>Resume Where I Left Off</button>
-                <button onClick={()=>{localStorage.removeItem(LS_KEY);window.location.reload();}} style={{padding:"8px 22px",background:B.mid,color:B.sand,border:`1px solid ${B.border}`,borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer"}}>Start Over</button>
-              </div>
-            </div>
-          )}
-          <div style={{textAlign:"center",marginBottom:32}}>
-            <Logo size={90}/>
-            <div style={{width:60,height:3,background:B.rust,margin:"18px auto 14px",borderRadius:2}}/>
-            <h1 style={{color:B.sand,fontSize:24,fontWeight:900,margin:"0 0 10px",letterSpacing:.5}}>Procurement Capability Dump™</h1>
-            <p style={{color:B.gold,fontSize:14,margin:0,lineHeight:1.8}}>A candid, voice-first diagnostic that captures what your company <em>actually</em> does —<br/>so your proposals reflect reality, not guesswork.</p>
-          </div>
-          <div style={cardS}>
-            <div style={{background:B.mid,border:`1px solid ${B.rust}`,borderRadius:8,padding:14,marginBottom:8}}>
-              <p style={{margin:0,color:B.sand,fontSize:13,lineHeight:1.8}}>🎙️ <strong style={{color:B.gold}}>This is a voice interview.</strong> Answer like you're telling somebody about your company at the bar — honest, real, and detailed. Don't filter yourself. The more candid you are, the stronger your proposals will be.</p>
-            </div>
-            <label style={lblS}>Business Name *</label>
-            <input style={inpS} placeholder="Your legal business name" value={biz.name} onChange={e=>setBiz({...biz,name:e.target.value})}/>
-            <label style={lblS}>Industry *</label>
-            <select style={inpS} value={biz.industry} onChange={e=>setBiz({...biz,industry:e.target.value})}>
-              <option value="">Select your industry...</option>
-              {INDUSTRIES.map(i=><option key={i} value={i}>{i}</option>)}
-            </select>
-            <label style={lblS}>Business Type *</label>
-            <select style={inpS} value={biz.bizType} onChange={e=>setBiz({...biz,bizType:e.target.value})}>
-              <option value="">Select your business type...</option>
-              {BUSINESS_TYPES.map(b=><option key={b} value={b}>{b}</option>)}
-            </select>
-            <div style={{marginTop:18,marginBottom:4}}>
-              <button onClick={()=>setShowSocial(!showSocial)} style={{background:"none",border:`1px solid ${B.border}`,color:B.gold,borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:700,cursor:"pointer",width:"100%"}}>
-                {showSocial?"▲ Hide Digital Presence":"▼ Add Website & Social Media (optional)"}
-              </button>
-            </div>
-            {showSocial&&(
-              <div style={{background:B.mid,borderRadius:8,padding:14,marginTop:4}}>
-                <p style={{color:B.gold,fontSize:12,margin:"0 0 8px",lineHeight:1.6}}>These links help us validate your capabilities and find portfolio content for proposals.</p>
-                {socials.map(({key,label,placeholder})=>(
-                  <div key={key}>
-                    <label style={{...lblS,marginTop:10}}>{label}</label>
-                    <input style={inpS} placeholder={placeholder} value={social[key]} onChange={e=>setSocial({...social,[key]:e.target.value})}/>
-                  </div>
-                ))}
-              </div>
-            )}
-            <RBtn full onClick={()=>onStart(biz,social)} disabled={!valid} style={{marginTop:22,fontSize:15}}>Begin Capability Dump →</RBtn>
-          </div>
-          <p style={{textAlign:"center",color:B.border,fontSize:12,marginTop:12}}>{TOTAL} prompts · 11 sections · AI-tailored to your industry · Your answers go directly to 915 Gypsy</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── SINGLE QUESTION SCREEN ────────────────────────────────────────────────
-function QuestionScreen({item,tailoredText,value,onChange,onNext,onBack,onPause,itemIdx,total,biz}){
-  const textRef=useRef(value||"");
-  const[tooShort,setTooShort]=useState(false);
-  const[prompts,setPrompts]=useState([]);
-  const[loadingPrompts,setLoadingPrompts]=useState(false);
-  const[showType,setShowType]=useState(false);
-
-  const displayText=tailoredText||item.text;
-  const has=(value||"").trim().length>0;
-  const pct=Math.round(((itemIdx+1)/total)*100);
-  const isLast=itemIdx===total-1;
-  const isSubQ=item.type==="sub";
-
-  const{on,interim,start,stop,supported}=useVoice(t=>{
-    textRef.current=(textRef.current+" "+t).trim();
-    onChange(textRef.current);
-  });
-
-  useEffect(()=>{textRef.current=value||"";},[value]);
-
-  function handleNext(){
-    if(isTooShort(value)){setTooShort(true);return;}
-    setTooShort(false);
-    onNext();
-  }
-
-  async function askAiPrompts(){
-    setLoadingPrompts(true);
-    try{
-      const txt=await callClaude(`Generate 3 follow-up prompts to help a ${biz?.industry||"business owner"} give a more detailed answer to this question:\n"${displayText}"\nReturn ONLY a JSON array of 3 strings: ["...","...","..."]`,400);
-      const cleaned=txt.replace(/```json/g,"").replace(/```/g,"").trim();
-      const first=cleaned.indexOf("[");const last=cleaned.lastIndexOf("]");
-      const arr=JSON.parse(cleaned.substring(first,last+1));
-      setPrompts(arr);
-    }catch{
-      setPrompts(["What specific examples can you share?","Can you include numbers, timeframes, or names?","What would you tell a new client about this?"]);
-    }
-    setLoadingPrompts(false);
-  }
-
-  return(
-    <div style={{minHeight:"100vh",background:B.bg,display:"flex",flexDirection:"column"}}>
-      <Header bizName={biz?.name}/>
-      <div style={{flex:1,padding:"28px 16px",maxWidth:680,margin:"0 auto",width:"100%"}}>
-        {/* Progress */}
-        <div style={{marginBottom:18}}>
-          <div style={{display:"flex",justifyContent:"space-between",color:B.gold,fontSize:12,marginBottom:6,fontWeight:600}}>
-            <span>{item.sectionTitle}</span>
-            <span>Prompt {itemIdx+1} of {total} · {pct}%</span>
-          </div>
-          <div style={{background:B.mid,borderRadius:99,height:6}}>
-            <div style={{background:B.rust,width:`${pct}%`,height:6,borderRadius:99,transition:"width .4s"}}/>
-          </div>
-        </div>
-
-        <div style={cardS}>
-          {/* Tag + type badge */}
-          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:12}}>
-            <span style={{fontSize:18}}>{item.tag}</span>
-            <span style={{fontSize:11,fontWeight:800,letterSpacing:1,color:B.gold,textTransform:"uppercase"}}>{item.tagLabel}</span>
-            {isSubQ&&(
-              <span style={{marginLeft:"auto",fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:99,background:B.mid,color:B.rust,border:`1px solid ${B.rust}`}}>Follow-Up Question</span>
-            )}
-          </div>
-
-          {/* Question text */}
-          <h2 style={{color:B.sand,fontSize:19,fontWeight:900,lineHeight:1.55,margin:"0 0 20px"}}>{displayText}</h2>
-
-          {/* Voice controls */}
-          <div style={{textAlign:"center",marginBottom:20}}>
-            {on?(
-              <div>
-                <div style={{position:"relative",width:80,height:80,margin:"0 auto 10px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <div style={{position:"absolute",width:80,height:80,borderRadius:"50%",background:`${B.rust}22`,animation:"pulse 1.5s ease-out infinite"}}/>
-                  <div style={{position:"absolute",width:60,height:60,borderRadius:"50%",background:`${B.rust}33`,animation:"pulse 1.5s ease-out .35s infinite"}}/>
-                  <div style={{width:48,height:48,borderRadius:"50%",background:B.rust,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1,fontSize:22}}>🎙️</div>
-                </div>
-                <p style={{color:B.rust,fontWeight:800,fontSize:13,margin:"0 0 6px"}}>Listening… speak naturally</p>
-                {interim&&<p style={{color:B.gold,fontSize:12,fontStyle:"italic",maxWidth:400,margin:"0 auto 10px",lineHeight:1.5}}>{interim}</p>}
-                <button onClick={stop} style={{padding:"8px 24px",background:B.mid,color:B.sand,border:`1px solid ${B.border}`,borderRadius:99,fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop Recording</button>
-              </div>
-            ):(
-              <div>
-                {supported?(
-                  <button onClick={start} style={{padding:"14px 40px",background:has?B.mid:B.rust,color:has?B.rust:B.white,border:has?`2px solid ${B.rust}`:"none",borderRadius:99,fontWeight:900,fontSize:16,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:10}}>
-                    🎙️ {has?"Add More":"Tap to Speak"}
-                  </button>
-                ):(
-                  <p style={{color:B.gold,fontSize:13}}>⚠️ Voice not supported in this browser — please type below.</p>
-                )}
-                <div style={{marginTop:8}}>
-                  <button onClick={()=>setShowType(!showType)} style={{background:"none",border:"none",color:B.border,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
-                    {showType?"Hide keyboard":"Prefer to type?"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Text area */}
-          {(showType||has)&&(
-            <div style={{marginBottom:8}}>
-              <div style={{fontSize:11,color:B.gold,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{has?"Your response (edit if needed):":"Type your answer:"}</div>
-              <textarea
-                style={{width:"100%",minHeight:120,background:B.mid,border:`1px solid ${tooShort?B.rust:B.border}`,borderRadius:8,padding:12,fontSize:14,fontFamily:"inherit",color:B.sand,resize:"vertical",boxSizing:"border-box",lineHeight:1.7}}
-                placeholder="Speak or type here…"
-                value={value||""}
-                onChange={e=>{textRef.current=e.target.value;onChange(e.target.value);setTooShort(false);}}
-              />
-              <div style={{fontSize:11,color:(value||"").trim().length>=MIN_CHARS?B.gold:B.border,marginTop:3,textAlign:"right"}}>
-                {(value||"").trim().length} / {MIN_CHARS} characters minimum
-              </div>
-            </div>
-          )}
-
-          {/* Tell me more warning */}
-          {tooShort&&(
-            <div style={{background:"#3a0a0a",border:`1px solid ${B.rust}`,borderRadius:8,padding:12,marginBottom:14}}>
-              <div style={{color:B.rust,fontWeight:800,fontSize:13,marginBottom:4}}>⚠️ Tell me more — include specifics (numbers, roles, tools, examples).</div>
-              <div style={{color:B.sand,fontSize:12,marginBottom:8}}>We need at least {MIN_CHARS} characters to build an accurate proposal from your answer.</div>
-              <button
-                onClick={askAiPrompts}
-                disabled={loadingPrompts}
-                style={{padding:"6px 16px",background:B.mid,color:B.gold,border:`1px solid ${B.gold}`,borderRadius:8,fontSize:12,fontWeight:700,cursor:loadingPrompts?"wait":"pointer"}}
-              >
-                {loadingPrompts?"Generating…":"🤖 Ask AI to prompt me"}
-              </button>
-              {prompts.length>0&&(
-                <div style={{marginTop:10}}>
-                  {prompts.map((p,i)=>(
-                    <div key={i} style={{display:"flex",gap:8,marginBottom:6,color:B.sand,fontSize:13,lineHeight:1.6}}>
-                      <span style={{color:B.rust,fontWeight:900,flexShrink:0}}>→</span><span>{p}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div style={{display:"flex",gap:8,marginTop:4}}>
-            {itemIdx>0&&(
-              <button onClick={onBack} style={{flex:1,padding:"12px 0",background:B.mid,color:B.sand,border:`1px solid ${B.border}`,borderRadius:8,fontWeight:700,fontSize:14,cursor:"pointer"}}>← Back</button>
-            )}
-            <button onClick={onPause} style={{padding:"12px 18px",background:B.mid,color:B.gold,border:`1px solid ${B.gold}`,borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer"}}>⏸ Pause</button>
-            <RBtn onClick={handleNext} style={{flex:2}}>{isLast?"Submit & Generate Report →":"Next →"}</RBtn>
-          </div>
-
-          {/* Proposal tiles */}
-          <div style={{marginTop:16,paddingTop:12,borderTop:`1px solid ${B.border}`}}>
-            <div style={{fontSize:11,color:B.border,marginBottom:5}}>Feeds into proposal documents:</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-              {item.docs.map(d=><span key={d} style={{background:B.mid,color:B.gold,fontSize:11,padding:"3px 10px",borderRadius:99,border:`1px solid ${B.border}`}}>{d}</span>)}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── REPORT ────────────────────────────────────────────────────────────────
-function Report({report,biz,social,answers,submitted}){
-  const[tab,setTab]=useState("summary");
-  const score=report.proposalReadiness?.score||0;
-  const scoreCol=score>=7?B.rust:score>=4?B.gold:"#dc2626";
-
-  function copyReport(){
-    let out=`915 GYPSY LLC — PROCUREMENT CAPABILITY DUMP™\n${"═".repeat(50)}\n`;
-    out+=`Company: ${biz.name}\nIndustry: ${biz.industry}\nType: ${biz.bizType}\nDate: ${new Date().toLocaleDateString()}\n`;
-    if(social.website)out+=`Website: ${social.website}\n`;
-    out+=`Proposal Readiness Score: ${score}/10\n\nASSESSMENT\n${report.proposalReadiness?.summary}\n\n`;
-    out+=`CAN DO\n${report.canDo?.map(c=>`• ${c.item}\n  ${c.evidence}`).join("\n\n")}\n\n`;
-    out+=`CANNOT DO\n${report.cannotDo?.map(c=>`• ${c.item}\n  ${c.reason}`).join("\n\n")}\n\n`;
-    out+=`CONDITIONAL\n${report.conditional?.map(c=>`• ${c.item}\n  Only if: ${c.condition}`).join("\n\n")}\n\n`;
-    out+=`FLAGS\n${report.flags?.map(f=>`[${f.type.toUpperCase()}] ${f.description}`).join("\n")}\n\n`;
-    out+=`TILE READINESS\n${report.tileMapping?.map(t=>`${(t.status||"").toUpperCase().padEnd(12)} ${t.tile}: ${t.note}`).join("\n")}\n\n`;
-    out+=`FULL ANSWERS\n${"─".repeat(40)}\n`;
-    SECTIONS.forEach(sec=>{
-      out+=`\nSECTION ${sec.id}: ${sec.title.toUpperCase()}\n`;
-      sec.questions.forEach(q=>{
-        const a=answers[q.id];
-        if(!a) return;
-        out+=`\nQ${q.id}: ${q.base}\nMAIN: ${a.main||""}\n`;
-        q.subs.forEach((s,i)=>{out+=`SUB ${i+1}: ${s}\n${(a.subs&&a.subs[i])||""}\n`;});
-      });
-    });
-    out+=`\n© 915 Gypsy LLC · Procurement Capability Dump™ · All rights reserved`;
-    navigator.clipboard.writeText(out).catch(()=>{});
-    alert("Full report copied to clipboard!");
-  }
-
-  const tabs=["summary","capabilities","tiles","answers"];
-  const tabLabel={summary:"📊 Summary",capabilities:"✅ Capabilities",tiles:"📁 Tile Readiness",answers:"📝 Full Answers"};
-
-  return(
-    <div style={{minHeight:"100vh",background:B.bg,display:"flex",flexDirection:"column"}}>
-      <Header bizName={biz.name}/>
-      <div style={{flex:1,padding:"28px 16px",maxWidth:740,margin:"0 auto",width:"100%"}}>
-        {submitted?(
-          <div style={{background:"#1a3a0c",border:"1px solid #4a8a2a",borderRadius:10,padding:14,marginBottom:20,display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:20}}>✅</span>
-            <div>
-              <div style={{color:"#8adf4a",fontWeight:800,fontSize:13}}>Successfully submitted to 915 Gypsy</div>
-              <div style={{color:"#6ab52a",fontSize:12}}>Jesse will review your Capability Dump and be in touch.</div>
-            </div>
-          </div>
-        ):(
-          <div style={{background:B.mid,border:`1px solid ${B.gold}`,borderRadius:10,padding:14,marginBottom:20,display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:20}}>⚠️</span>
-            <div style={{color:B.gold,fontSize:13}}>Submission to 915 Gypsy could not be confirmed. Use the Copy Report button to save your results.</div>
-          </div>
-        )}
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{width:60,height:3,background:B.rust,margin:"0 auto 16px",borderRadius:2}}/>
-          <h1 style={{color:B.sand,fontSize:22,fontWeight:900,margin:"0 0 6px"}}>Capability Summary Report</h1>
-          <p style={{color:B.gold,fontSize:13,margin:"0 0 14px"}}>{biz.name} · {biz.industry} · {biz.bizType}</p>
-          <div style={{display:"inline-block",background:B.card,border:`2px solid ${scoreCol}`,borderRadius:99,padding:"6px 28px",marginBottom:14}}>
-            <span style={{fontSize:15,fontWeight:900,color:scoreCol}}>Proposal Readiness: {score}/10</span>
-          </div>
-          <div><button onClick={copyReport} style={{padding:"8px 22px",background:B.mid,color:B.gold,border:`1px solid ${B.gold}`,borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer"}}>📋 Copy Full Report</button></div>
-        </div>
-        <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
-          {tabs.map(t=><button key={t} onClick={()=>setTab(t)} style={{padding:"8px 16px",borderRadius:99,border:"1px solid",fontSize:13,fontWeight:700,cursor:"pointer",background:tab===t?B.rust:B.card,color:tab===t?B.white:B.gold,borderColor:tab===t?B.rust:B.border}}>{tabLabel[t]}</button>)}
-        </div>
-
-        {tab==="summary"&&(
-          <div style={{display:"grid",gap:16}}>
-            <div style={cardS}>
-              <h3 style={{color:B.sand,fontWeight:800,fontSize:15,marginBottom:10}}>Assessment</h3>
-              <p style={{color:B.gold,fontSize:14,lineHeight:1.8,margin:0}}>{report.proposalReadiness?.summary}</p>
-            </div>
-            {report.flags?.length>0&&(
-              <div style={cardS}>
-                <h3 style={{color:B.sand,fontWeight:800,fontSize:15,marginBottom:14}}>Flags & Findings</h3>
-                {report.flags.map((f,i)=>(
-                  <div key={i} style={{display:"flex",gap:10,marginBottom:10,padding:12,borderRadius:8,background:B.mid,borderLeft:`3px solid ${f.type==="risk"?"#dc2626":f.type==="gap"?B.gold:B.rust}`}}>
-                    <span style={{fontSize:16}}>{f.type==="risk"?"🚨":f.type==="gap"?"⚠️":"💡"}</span>
-                    <div>
-                      <div style={{fontSize:11,fontWeight:800,textTransform:"uppercase",color:f.type==="risk"?"#dc2626":f.type==="gap"?B.gold:B.rust,marginBottom:3}}>{f.type}</div>
-                      <p style={{margin:0,fontSize:13,color:B.sand,lineHeight:1.6}}>{f.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab==="capabilities"&&(
-          <div style={{display:"grid",gap:16}}>
-            {[
-              {label:"✅ CAN DO",items:report.canDo,accent:B.rust,sub:c=>c.evidence},
-              {label:"🚫 CANNOT DO",items:report.cannotDo,accent:"#dc2626",sub:c=>c.reason},
-              {label:"⚠️ CONDITIONAL",items:report.conditional,accent:B.gold,sub:c=>`Only if: ${c.condition}`}
-            ].map(({label,items,accent,sub})=>(
-              <div key={label} style={{...cardS,borderLeft:`4px solid ${accent}`}}>
-                <h3 style={{color:B.sand,fontWeight:900,marginBottom:14,fontSize:15}}>{label}</h3>
-                {items?.length?items.map((c,i)=>(
-                  <div key={i} style={{marginBottom:10,paddingBottom:10,borderBottom:i<items.length-1?`1px solid ${B.border}`:"none"}}>
-                    <div style={{fontWeight:800,color:B.sand,fontSize:14}}>{c.item}</div>
-                    <div style={{color:B.gold,fontSize:13,marginTop:3,lineHeight:1.6}}>{sub(c)}</div>
-                  </div>
-                )):<div style={{color:B.border,fontSize:13}}>None identified</div>}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {tab==="tiles"&&(
-          <div style={cardS}>
-            <h3 style={{color:B.sand,fontWeight:800,fontSize:15,marginBottom:16}}>Proposal Tile Readiness</h3>
-            {report.tileMapping?.map((t,i)=>{
-              const c=t.status==="ready"?B.rust:t.status==="needs work"?B.gold:"#dc2626";
-              return(
-                <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:i<report.tileMapping.length-1?`1px solid ${B.border}`:"none"}}>
-                  <span style={{fontSize:11,fontWeight:800,padding:"3px 10px",borderRadius:99,background:B.mid,color:c,border:`1px solid ${c}`,flexShrink:0,whiteSpace:"nowrap",marginTop:2}}>{(t.status||"").toUpperCase()}</span>
-                  <div>
-                    <div style={{fontWeight:800,fontSize:14,color:B.sand}}>{t.tile}</div>
-                    <div style={{fontSize:13,color:B.gold,marginTop:2,lineHeight:1.5}}>{t.note}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {tab==="answers"&&(
-          <div>
-            {SECTIONS.map(sec=>(
-              <div key={sec.id} style={{marginBottom:22}}>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-                  <div style={{height:2,flex:1,background:B.rust,borderRadius:1}}/>
-                  <h3 style={{fontSize:11,fontWeight:800,letterSpacing:1.5,color:B.rust,textTransform:"uppercase",margin:0,whiteSpace:"nowrap"}}>Section {sec.id}: {sec.title}</h3>
-                  <div style={{height:2,flex:1,background:B.rust,borderRadius:1}}/>
-                </div>
-                {sec.questions.map(q=>{
-                  const a=answers[q.id];
-                  if(!a) return null;
-                  return(
-                    <div key={q.id} style={{...cardS,marginBottom:10}}>
-                      <div style={{fontSize:11,color:B.border,marginBottom:4}}>{q.tag} Q{q.id} — {q.tagLabel}</div>
-                      <div style={{fontWeight:700,fontSize:13,color:B.gold,marginBottom:6}}>{q.base}</div>
-                      <div style={{fontSize:14,color:B.sand,lineHeight:1.8,whiteSpace:"pre-wrap",marginBottom:a.subs?.length?10:0}}>{a.main}</div>
-                      {q.subs.map((s,i)=>(
-                        <div key={i} style={{background:B.mid,borderRadius:8,padding:10,marginTop:8}}>
-                          <div style={{fontSize:11,color:B.rust,fontWeight:800,marginBottom:4}}>→ {s}</div>
-                          <div style={{fontSize:13,color:B.sand,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{(a.subs&&a.subs[i])||""}</div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div style={{marginTop:28,padding:14,background:B.card,borderRadius:10,border:`1px solid ${B.border}`,textAlign:"center"}}>
-          <Logo size={28}/>
-          <p style={{color:B.border,fontSize:11,margin:"8px 0 0"}}>© 915 Gypsy LLC · Procurement Capability Dump™ is a proprietary diagnostic tool · All rights reserved</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── LOADING SCREEN ────────────────────────────────────────────────────────
-function Loading({msg}){
-  return(
-    <div style={{minHeight:"100vh",background:B.bg,display:"flex",flexDirection:"column"}}>
-      <Header/>
-      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:20}}>
-        <div style={{width:44,height:44,border:`4px solid ${B.border}`,borderTop:`4px solid ${B.rust}`,borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
-        <p style={{color:B.sand,fontSize:15,textAlign:"center",maxWidth:340,lineHeight:1.8}}>{msg}</p>
-      </div>
-    </div>
-  );
-}
-
-// ─── APP ───────────────────────────────────────────────────────────────────
-function App(){
-  const[stage,setStage]=useState("onboard");
-  const[biz,setBiz]=useState(null);
-  const[social,setSocial]=useState({});
-  // tailored: { [qId]: { main:"", subs:["",""] } }
-  const[tailored,setTailored]=useState({});
-  // answers: { [qId]: { main:"", subs:["",""] } }
-  const[answers,setAnswers]=useState({});
-  // itemIdx: index into ALL_ITEMS flat array
-  const[itemIdx,setItemIdx]=useState(0);
-  const[report,setReport]=useState(null);
-  const[submitted,setSubmitted]=useState(false);
-  const[loadMsg,setLoadMsg]=useState("");
-  const[savedSession,setSavedSession]=useState(null);
-
-  // On mount, check for saved session
-  useEffect(()=>{
-    try{
-      const raw=localStorage.getItem(LS_KEY);
-      if(raw){
-        const s=JSON.parse(raw);
-        if(s.biz&&s.stage==="interview") setSavedSession(s);
-      }
-    }catch{}
-  },[]);
-
-  function saveSession(overrides={}){
-    const s={stage,biz,social,tailored,answers,itemIdx,...overrides};
-    try{localStorage.setItem(LS_KEY,JSON.stringify(s));}catch{}
-  }
-
-  function handleResume(){
-    const s=savedSession;
-    setBiz(s.biz);setSocial(s.social||{});setTailored(s.tailored||{});
-    setAnswers(s.answers||{});setItemIdx(s.itemIdx||0);
-    setSavedSession(null);setStage("interview");
-  }
-
-  async function handleStart(bizInfo,socialInfo){
-    setBiz(bizInfo);setSocial(socialInfo);
-    setStage("tailoring");
-    setLoadMsg(`Tailoring your ${TOTAL} prompts for a ${bizInfo.industry} company…`);
-    const result={};
-    for(const q of ALL_Q){
-      result[q.id]=await tailorQuestion(q.base,q.subs,bizInfo.industry,bizInfo.bizType,q.id);
-    }
-    setTailored(result);
-    setStage("interview");
-    localStorage.removeItem(LS_KEY);
-  }
-
-  // Get current value for this item from answers
-  function getItemValue(item){
-    const a=answers[item.qId];
-    if(!a) return "";
-    if(item.type==="main") return a.main||"";
-    return (a.subs&&a.subs[item.subIdx])||"";
-  }
-
-  function setItemValue(item,val){
-    setAnswers(prev=>{
-      const a={...(prev[item.qId]||{main:"",subs:[]})};
-      if(item.type==="main"){
-        a.main=val;
-      } else {
-        const subs=[...(a.subs||[])];
-        subs[item.subIdx]=val;
-        a.subs=subs;
-      }
-      return {...prev,[item.qId]:a};
-    });
-  }
-
-  function handlePause(){
-    saveSession({stage:"interview",itemIdx,answers,tailored,biz,social});
-    alert("Progress saved! You can close this tab and resume later.");
-  }
-
-  async function handleNext(){
-    if(itemIdx<ALL_ITEMS.length-1){
-      const nextIdx=itemIdx+1;
-      setItemIdx(nextIdx);
-      saveSession({itemIdx:nextIdx});
-      return;
-    }
-    // Last item — generate report
-    setStage("generating");
-    setLoadMsg("Analyzing your responses and building your Capability Summary Report…");
-    let r;
-    try{
-      r=await buildReport(answers,biz);
-    }catch{
-      r={
-        canDo:[],cannotDo:[],conditional:[],
-        flags:[{type:"gap",description:"Report generation encountered an error. Your answers have been captured — please use Copy Report to save them."}],
-        proposalReadiness:{score:0,summary:"Report generation failed. Your raw answers are available in the Full Answers tab."},
-        tileMapping:[{tile:"All Tiles",status:"needs work",note:"Manual review required"}]
-      };
-    }
-    setReport(r);
-    setLoadMsg("Submitting your report to 915 Gypsy…");
-    let ok=false;
-    try{ok=await submitToAirtable(biz,social,answers,r);}catch{}
-    setSubmitted(ok);
-    localStorage.removeItem(LS_KEY);
-    setStage("report");
-  }
-
-  // Get tailored text for current item
-  function getTailoredText(item){
-    const t=tailored[item.qId];
-    if(!t) return item.text;
-    if(item.type==="main") return t.main||item.text;
-    return (t.subs&&t.subs[item.subIdx])||item.text;
-  }
-
-  const curItem=ALL_ITEMS[itemIdx];
-
-  if(stage==="onboard")return(
-    <Onboarding
-      onStart={handleStart}
-      savedSession={savedSession}
-      onResume={handleResume}
-    />
-  );
-  if(stage==="tailoring"||stage==="generating")return <Loading msg={loadMsg}/>;
-  if(stage==="interview"&&curItem)return(
-    <QuestionScreen
-      item={curItem}
-      tailoredText={getTailoredText(curItem)}
-      value={getItemValue(curItem)}
-      onChange={val=>setItemValue(curItem,val)}
-      onNext={handleNext}
-      onBack={()=>setItemIdx(Math.max(0,itemIdx-1))}
-      onPause={handlePause}
-      itemIdx={itemIdx}
-      total={TOTAL}
-      biz={biz}
-    />
-  );
-  if(stage==="report"&&report)return(
-    <Report report={report} biz={biz} social={social} answers={answers} submitted={submitted}/>
-  );
-  return null;
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
-</script>
-</body>
-</html>
-
-  // as Netlify environment variables — never exposed to the browser.
-  window.APP_CONFIG = {
-    CLAUDE_ENDPOINT:   "/.netlify/functions/claude",
-    AIRTABLE_ENDPOINT: "/.netlify/functions/airtable",
-  };
-</script>
-
-<style>
-/* ============================================================
-   RESET & BASE
-   ============================================================ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:        #1E0A04;
-  --bg2:       #2B0F06;
-  --card:      #3a1a0c;
-  --mid:       #4a2510;
-  --border:    #6b3a1f;
-  --rust:      #C4551C;
-  --rust-dark: #9e4115;
-  --sand:      #E6C88F;
-  --gold:      #D4B072;
-  --gold-dim:  #a8864e;
-  --white:     #ffffff;
-  --success:   #4a8a2a;
-  --danger:    #dc2626;
-  --warn:      #d97706;
-}
-
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: 'Barlow', sans-serif;
-  background: var(--bg);
-  color: var(--sand);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Grain overlay on body */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.4;
-}
-
-select option { background: var(--bg2); color: var(--sand); }
-
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: var(--bg2); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--rust); }
-
-/* ============================================================
-   ANIMATIONS
-   ============================================================ */
-@keyframes spin     { to { transform: rotate(360deg); } }
-@keyframes pulse    { 0%   { transform: scale(1); opacity: 1; }
-                      100% { transform: scale(2.4); opacity: 0; } }
-@keyframes fadeUp   { from { opacity: 0; transform: translateY(20px); }
-                      to   { opacity: 1; transform: translateY(0); } }
-@keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
-@keyframes shimmer  { 0%   { background-position: -200% center; }
-                      100% { background-position: 200% center; } }
-@keyframes blink    { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-@keyframes barGrow  { from { width: 0; } to { width: var(--target-w); } }
-
-.fade-up { animation: fadeUp 0.5s ease both; }
-
-/* ============================================================
-   UTILITY CLASSES
-   ============================================================ */
-.sr-only {
-  position: absolute; width: 1px; height: 1px;
-  padding: 0; margin: -1px; overflow: hidden;
-  clip: rect(0,0,0,0); border: 0;
-}
-
-/* ============================================================
-   LAYOUT
-   ============================================================ */
-.page {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 1;
-}
-
-.content-wrap {
-  flex: 1;
-  padding: 32px 16px 48px;
-  max-width: 700px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.content-wrap--wide {
-  max-width: 820px;
-}
-
-/* ============================================================
-   HEADER
-   ============================================================ */
-.header {
-  background: rgba(27, 8, 3, 0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 2px solid var(--rust);
-  padding: 10px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-}
-
-.header__divider {
-  width: 1px;
-  height: 30px;
-  background: var(--border);
-}
-
-.header__title {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--sand);
-}
-
-.header__sub {
-  font-size: 11px;
-  color: var(--gold);
-  margin-top: 1px;
-}
-
-.header__badge {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--gold-dim);
-  font-style: italic;
-}
-
-.logo-img {
-  height: 40px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-  flex-shrink: 0;
-}
-
-.logo-fallback {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px;
-  letter-spacing: 3px;
-  color: var(--sand);
-  flex-shrink: 0;
-}
-
-/* ============================================================
-   CARDS
-   ============================================================ */
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 28px;
-}
-
-.card--accent-left {
-  border-left: 4px solid var(--rust);
-}
-
-/* ============================================================
-   FORMS
-   ============================================================ */
-.label {
-  display: block;
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--gold);
-  margin-bottom: 5px;
-  margin-top: 16px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.input, .select, .textarea {
-  width: 100%;
-  padding: 10px 14px;
-  background: var(--mid);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: 'Barlow', sans-serif;
-  color: var(--sand);
-  transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
-  box-sizing: border-box;
-}
-
-.input:focus, .select:focus, .textarea:focus {
-  border-color: var(--rust);
-  box-shadow: 0 0 0 3px rgba(196, 85, 28, 0.15);
-}
-
-.textarea {
-  resize: vertical;
-  min-height: 120px;
-  line-height: 1.7;
-}
-
-/* ============================================================
-   BUTTONS
-   ============================================================ */
-.btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-family: 'Barlow', sans-serif;
-  font-weight: 800;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn--primary {
-  background: var(--rust);
-  color: var(--white);
-}
-
-.btn--primary:hover:not(:disabled) {
-  background: var(--rust-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(196, 85, 28, 0.35);
-}
-
-.btn--primary:disabled {
-  background: var(--mid);
-  color: #9a7060;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.btn--secondary {
-  background: var(--mid);
-  color: var(--sand);
-  border: 1px solid var(--border);
-}
-
-.btn--secondary:hover {
-  border-color: var(--rust);
-  color: var(--rust);
-}
-
-.btn--ghost {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--gold);
-}
-
-.btn--ghost:hover {
-  border-color: var(--gold);
-  color: var(--sand);
-}
-
-.btn--full { width: 100%; }
-
-.btn--pill { border-radius: 99px; }
-
-.btn--sm { padding: 7px 16px; font-size: 12px; }
-
-/* ============================================================
-   PROGRESS BAR
-   ============================================================ */
-.progress-wrap { margin-bottom: 20px; }
-.progress-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--gold);
-  margin-bottom: 7px;
-}
-.progress-track {
-  background: var(--mid);
-  border-radius: 99px;
-  height: 6px;
-  overflow: hidden;
-}
-.progress-bar {
-  background: linear-gradient(90deg, var(--rust-dark), var(--rust));
-  height: 100%;
-  border-radius: 99px;
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ============================================================
-   TAG CHIPS
-   ============================================================ */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 12px;
-  border-radius: 99px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  border: 1px solid var(--border);
-  background: var(--mid);
-  color: var(--gold);
-}
-
-/* ============================================================
-   STATUS BADGES
-   ============================================================ */
-.badge {
-  display: inline-block;
-  padding: 3px 12px;
-  border-radius: 99px;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge--ready   { background: rgba(196,85,28,0.15); color: var(--rust);    border: 1px solid var(--rust); }
-.badge--needs   { background: rgba(212,176,114,0.1); color: var(--gold);   border: 1px solid var(--gold); }
-.badge--missing { background: rgba(220,38,38,0.1);  color: var(--danger);  border: 1px solid var(--danger); }
-
-/* ============================================================
-   ALERT BANNERS
-   ============================================================ */
-.alert {
-  border-radius: 10px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  font-size: 13px;
-  line-height: 1.6;
-  margin-bottom: 20px;
-}
-
-.alert__icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
-
-.alert--success { background: rgba(74,138,42,0.12); border: 1px solid var(--success); }
-.alert--success .alert__title { color: #8adf4a; font-weight: 800; font-size: 13px; margin-bottom: 2px; }
-.alert--success .alert__body  { color: #6ab52a; }
-
-.alert--warn { background: rgba(212,176,114,0.08); border: 1px solid var(--gold); }
-.alert--warn .alert__title { color: var(--gold); font-weight: 800; font-size: 13px; }
-
-.alert--info { background: rgba(196,85,28,0.08); border: 1px solid var(--rust); }
-.alert--info .alert__title { color: var(--rust); font-weight: 800; font-size: 13px; margin-bottom: 4px; }
-.alert--info .alert__body  { color: var(--sand); }
-
-/* ============================================================
-   VOICE RECORDER UI
-   ============================================================ */
-.voice-center { text-align: center; margin-bottom: 22px; }
-
-.pulse-ring {
-  position: relative;
-  width: 88px;
-  height: 88px;
-  margin: 0 auto 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pulse-ring__ring {
-  position: absolute;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background: rgba(196, 85, 28, 0.2);
-  animation: pulse 1.6s ease-out infinite;
-}
-
-.pulse-ring__ring:nth-child(2) {
-  width: 66px;
-  height: 66px;
-  animation-delay: 0.4s;
-}
-
-.pulse-ring__core {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--rust);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  z-index: 1;
-  box-shadow: 0 0 24px rgba(196, 85, 28, 0.5);
-}
-
-.listening-label {
-  color: var(--rust);
-  font-weight: 800;
-  font-size: 13px;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-
-.interim-text {
-  color: var(--gold);
-  font-size: 13px;
-  font-style: italic;
-  max-width: 420px;
-  margin: 0 auto 12px;
-  line-height: 1.6;
-  animation: blink 2s ease-in-out infinite;
-}
-
-.mic-btn {
-  padding: 14px 44px;
-  border-radius: 99px;
-  border: none;
-  font-family: 'Barlow', sans-serif;
-  font-weight: 900;
-  font-size: 16px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  transition: all 0.25s;
-}
-
-.mic-btn--idle {
-  background: var(--rust);
-  color: var(--white);
-  box-shadow: 0 4px 20px rgba(196, 85, 28, 0.3);
-}
-
-.mic-btn--idle:hover {
-  background: var(--rust-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(196, 85, 28, 0.4);
-}
-
-.mic-btn--has-answer {
-  background: var(--mid);
-  color: var(--rust);
-  border: 2px solid var(--rust);
-}
-
-.mic-btn--has-answer:hover {
-  background: rgba(196,85,28,0.1);
-}
-
-/* ============================================================
-   ONBOARDING HERO
-   ============================================================ */
-.hero {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.hero__logo-wrap {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 18px;
-}
-
-.hero__divider {
-  width: 60px;
-  height: 3px;
-  background: var(--rust);
-  margin: 0 auto 16px;
-  border-radius: 2px;
-}
-
-.hero__title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 38px;
-  letter-spacing: 2px;
-  color: var(--sand);
-  margin-bottom: 10px;
-  line-height: 1.1;
-}
-
-.hero__sub {
-  color: var(--gold);
-  font-size: 14px;
-  line-height: 1.9;
-  max-width: 480px;
-  margin: 0 auto;
-}
-
-/* ============================================================
-   SOCIAL LINKS SECTION
-   ============================================================ */
-.social-toggle {
-  width: 100%;
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--gold);
-  border-radius: 8px;
-  padding: 9px 16px;
-  font-family: 'Barlow', sans-serif;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  margin-top: 20px;
-  margin-bottom: 4px;
-  transition: all 0.2s;
-  text-align: left;
-}
-
-.social-toggle:hover { border-color: var(--gold); color: var(--sand); }
-
-.social-panel {
-  background: var(--mid);
-  border-radius: 8px;
-  padding: 16px;
-  margin-top: 4px;
-}
-
-.social-hint {
-  color: var(--gold);
-  font-size: 12px;
-  line-height: 1.7;
-  margin-bottom: 12px;
-}
-
-/* ============================================================
-   QUESTION SCREEN
-   ============================================================ */
-.q-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.q-tag-emoji { font-size: 20px; }
-
-.q-tag-label {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  color: var(--gold);
-  text-transform: uppercase;
-  font-family: 'Barlow Condensed', sans-serif;
-}
-
-.q-title {
-  font-family: 'Barlow', sans-serif;
-  font-size: 20px;
-  font-weight: 900;
-  line-height: 1.5;
-  color: var(--sand);
-  margin-bottom: 18px;
-}
-
-.q-hints {
-  background: var(--mid);
-  border-radius: 10px;
-  padding: 16px;
-  margin-bottom: 24px;
-  border-left: 3px solid var(--rust);
-}
-
-.q-hints__label {
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--gold);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 10px;
-}
-
-.q-hint-item {
-  display: flex;
-  gap: 10px;
-  color: var(--sand);
-  font-size: 13px;
-  line-height: 1.65;
-  margin-bottom: 7px;
-}
-
-.q-hint-item:last-child { margin-bottom: 0; }
-
-.q-hint-arrow { color: var(--rust); font-weight: 900; flex-shrink: 0; }
-
-.q-response-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--gold);
-  margin-bottom: 7px;
-}
-
-.q-nav {
-  display: flex;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.q-nav .btn:first-child { flex: 1; }
-.q-nav .btn:last-child  { flex: 2; }
-
-.doc-tags {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-
-.doc-tags__label { font-size: 11px; color: var(--border); margin-bottom: 7px; }
-
-.doc-tags__list { display: flex; flex-wrap: wrap; gap: 5px; }
-
-.type-toggle-wrap { margin-top: 10px; }
-
-/* ============================================================
-   LOADING SCREEN
-   ============================================================ */
-.loading-screen {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 40px;
-}
-
-.spinner {
-  width: 52px;
-  height: 52px;
-  border: 4px solid var(--border);
-  border-top-color: var(--rust);
-  border-radius: 50%;
-  animation: spin 0.9s linear infinite;
-}
-
-.loading-msg {
-  color: var(--sand);
-  font-size: 15px;
-  text-align: center;
-  max-width: 380px;
-  line-height: 1.9;
-}
-
-.loading-logo-wrap { opacity: 0.5; }
-
-/* ============================================================
-   REPORT SCREEN
-   ============================================================ */
-.report-hero { text-align: center; margin-bottom: 28px; }
-
-.report-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 32px;
-  letter-spacing: 2px;
-  color: var(--sand);
-  margin-bottom: 6px;
-}
-
-.report-meta { color: var(--gold); font-size: 13px; margin-bottom: 16px; }
-
-.score-badge {
-  display: inline-block;
-  background: var(--card);
-  border-radius: 99px;
-  padding: 8px 32px;
-  margin-bottom: 16px;
-}
-
-.score-text {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 18px;
-  font-weight: 900;
-}
-
-.report-tabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 22px;
-}
-
-.tab-btn {
-  padding: 8px 18px;
-  border-radius: 99px;
-  border: 1px solid;
-  font-family: 'Barlow', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tab-btn--active {
-  background: var(--rust);
-  color: var(--white);
-  border-color: var(--rust);
-}
-
-.tab-btn--inactive {
-  background: var(--card);
-  color: var(--gold);
-  border-color: var(--border);
-}
-
-.tab-btn--inactive:hover {
-  border-color: var(--rust);
-  color: var(--sand);
-}
-
-/* Capability cards */
-.cap-item {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.cap-item:last-child { border-bottom: none; padding-bottom: 0; }
-
-.cap-item__title { font-weight: 800; color: var(--sand); font-size: 14px; margin-bottom: 3px; }
-.cap-item__sub   { color: var(--gold); font-size: 13px; line-height: 1.6; }
-
-/* Flag cards */
-.flag-item {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 10px;
-  padding: 14px;
-  border-radius: 10px;
-  background: var(--mid);
-}
-
-.flag-item__icon { font-size: 18px; flex-shrink: 0; }
-.flag-item__type { font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
-.flag-item__desc { font-size: 13px; color: var(--sand); line-height: 1.6; }
-
-/* Tile list */
-.tile-row {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.tile-row:last-child { border-bottom: none; }
-
-.tile-row__name  { font-weight: 800; font-size: 14px; color: var(--sand); }
-.tile-row__note  { font-size: 13px; color: var(--gold); margin-top: 2px; line-height: 1.5; }
-
-/* Answer section */
-.section-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.section-divider__line { flex: 1; height: 2px; background: var(--rust); border-radius: 1px; }
-
-.section-divider__label {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: var(--rust);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.answer-card { margin-bottom: 12px; }
-
-.answer-card__meta { font-size: 11px; color: var(--border); margin-bottom: 4px; }
-.answer-card__q    { font-weight: 700; font-size: 13px; color: var(--gold); margin-bottom: 9px; }
-.answer-card__body { font-size: 14px; color: var(--sand); line-height: 1.85; white-space: pre-wrap; }
-
-/* Footer */
-.report-footer {
-  margin-top: 32px;
-  padding: 18px;
-  background: var(--card);
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  text-align: center;
-}
-
-.report-footer__copy {
-  color: var(--border);
-  font-size: 11px;
-  margin-top: 8px;
-}
-
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
-@media (max-width: 480px) {
-  .content-wrap { padding: 20px 12px 40px; }
-  .card { padding: 20px 16px; }
-  .hero__title { font-size: 30px; }
-  .q-title { font-size: 17px; }
-  .report-title { font-size: 26px; }
-  .q-nav .btn { font-size: 13px; padding: 12px 14px; }
-}
-</style>
-</head>
-<body>
-<div id="root"></div>
-
-<script type="text/babel">
-const { useState, useRef, useEffect, useCallback } = React;
-
-/* ============================================================
-   CONSTANTS & CONFIG
-   ============================================================ */
-const CFG = window.APP_CONFIG;
-
-const LOGO_URL = "https://img1.wsimg.com/isteam/ip/24c22cb3-fef9-4b59-9955-fb4483f9ade0/915%20Gypsy.png/:/rs=w:260,h:260,cg:true,m/cr=w:260,h:260";
-
-const AT_FIELDS = {
-  name:"fldFjQf3NgdBynjlm", industry:"fld6s42MwLWsGJUuB", bizType:"fldgESTkatKW2iJwR",
-  date:"fldHe1440gjGG1dUI", website:"fldfhM0wz46iMSlDH", linkedin:"fldXtiYvoInxJnvYA",
-  facebook:"fldrvDOszqORWWxcD", instagram:"fldbgI4KuiLeE7chW", tiktok:"fld2u7NMXbw5QQ5hn",
-  youtube:"fldkjzY6tF9XqKHrn", other:"fldPbLVHBU5zVo3mT",
-  s1:"fldJLGYDBdd7TE5Qc", s2:"fldyAKP1BFOFinJ9w", s3:"fldoTS3z5L4GIdTKP",
-  s4:"fldRBlvJeCQw5UAWw", s5:"fldza8UrVcNJYUSTa", s6:"fldUbGRkY37C0gyn0",
-  s7:"fldTAzjX236E9jnae", s8:"fldJrrE3BAlpMAzlE", s9:"fldTUgLWdtuDjMPhQ",
-  s10:"fldWYBdW6CMosyGD2", s11:"fldRWWNm128SNJ70D",
-  canDo:"fldetonFG7lf6Okst", cannotDo:"fldQrlY4ayiyTHP7e",
-  conditional:"fldZQc0XS8J9eNaYv", flags:"fldxKRaD7O2MiQCJB",
-  score:"fldaP3y31VARHPyag", tiles:"fldVfBpkioVI0TAlC"
-};
-
-const SEC_FIELD = {1:"s1",2:"s2",3:"s3",4:"s4",5:"s5",6:"s6",7:"s7",8:"s8",9:"s9",10:"s10",11:"s11"};
-
-const INDUSTRIES = [
-  "Roofing & Waterproofing","General Contracting","Electrical","Plumbing","HVAC",
-  "Landscaping & Grounds","Janitorial & Facilities","Construction Management",
-  "IT & Cybersecurity","Web & App Development","AI & Automation",
-  "Consulting & Professional Services","Workforce Development & Training",
-  "Staffing & Recruiting","Marketing & Creative","Accounting & Financial Services",
-  "Transportation & Logistics","Security Services","Healthcare Services","Other"
-];
-
-const BUSINESS_TYPES = [
-  "Service-Based","Product-Based","Product + Service","Subcontractor",
-  "Prime Contractor","Joint Venture","Nonprofit"
-];
-
-const SECTIONS = [
-  {id:1, title:"Business Identity & Legal Framework", questions:[
-    {id:1, base:"What is your complete business identity as it exists today?", subs:["How is the business legally structured, and how does that influence your operations?","What licenses, registrations, or credentials are currently active (SAM.gov, CMBL, HUB, insurance, etc.)?"], docs:["Capability Statement","SAM/DSBS Profile","Compliance Attachments"], tag:"🟩", tagLabel:"Core Foundation"},
-    {id:2, base:"What specific services are you legally and safely authorized to perform?", subs:["Where do your licenses stop?","Are there any licenses or registrations you are currently pursuing?"], docs:["Technical Approach","Licensure Documentation","Capability Statement"], tag:"🟥", tagLabel:"Compliance Boundary"}
-  ]},
-  {id:2, title:"Scope of Work: What You Do & Do Not Do", questions:[
-    {id:3, base:"If someone asked 'What exactly does your company DO?' — what is your clear, confident answer?", subs:["What are the three core services you perform consistently?","What services do people assume you do, but you actually don't?"], docs:["Core Competencies","Technical Approach","SAM Profile"], tag:"🟩", tagLabel:"Core Capability"},
-    {id:4, base:"What work do you absolutely NOT perform under any circumstance?", subs:["Why don't you perform this work — licensing, safety, cost, risk?","If a contract requires this task, would you decline or subcontract?"], docs:["Assumptions/Limitations","Technical Approach","Risk Plan"], tag:"🟥", tagLabel:"Hidden Risk"},
-    {id:5, base:"What tasks fall in the conditional category — where you can do them, but only under certain situations?", subs:["What conditions must be met for you to say yes?","What conditions cause an automatic no-bid?"], docs:["Technical Approach","Pricing Narrative","Risk Mitigation"], tag:"🟧", tagLabel:"Operational Constraint"}
-  ]},
-  {id:3, title:"Throughput, Capacity & Operational Limits", questions:[
-    {id:6, base:"What is your real operational throughput — the volume of work you can complete in a day, week, and month?", subs:["What limits your throughput — people, equipment, supply chain, weather?","What is the difference between your normal load and your maximum safe load?"], docs:["Technical Approach","Production Rate","Staffing Plan"], tag:"⚙️", tagLabel:"Operational Bottleneck"},
-    {id:7, base:"What is the largest project you've successfully completed, and what made it work?", subs:["What factors allowed that scale?","Could you repeat that same project today?"], docs:["Past Performance","Experience Narrative","Capability Statement"], tag:"⭐", tagLabel:"Proven Capability"},
-    {id:8, base:"What projects are too large for you right now, and why?", subs:["Is the limitation size, duration, crew count, or cash flow?","What would need to change to take on work at that scale?"], docs:["Risk Plan","Assumptions","Go/No-Go Guidance"], tag:"🟥", tagLabel:"Capacity Risk"},
-    {id:9, base:"If demand doubled or tripled in 30 days, what would break first in your operations?", subs:["What part of your workflow would bottleneck immediately?","What people, processes, or equipment would you need to prevent that breakdown?"], docs:["Risk Mitigation","Contingency Plan","Staffing Strategy"], tag:"🟧", tagLabel:"System Stress Test"}
-  ]},
-  {id:4, title:"People, Crew, Qualifications & Structure", questions:[
-    {id:10, base:"Who performs the work — what roles, certifications, and skill levels exist within your team?", subs:["Who is cross-trained versus highly specialized?","Who holds certifications or licenses, and for what tasks?"], docs:["Staffing Plan","Qualifications Matrix","Org Chart"], tag:"🟩", tagLabel:"Human Capital Strength"},
-    {id:11, base:"Who is your strongest or most reliable team, and why do you trust them with your most important jobs?", subs:["How do you assign jobs based on skills?","Who steps in if key personnel are unavailable?"], docs:["Management Plan","Key Personnel Resumes","Past Performance"], tag:"⭐", tagLabel:"Operational Differentiator"},
-    {id:12, base:"Are you currently understaffed, overstaffed, or staffed appropriately for the contracts you want to pursue?", subs:["How quickly can you onboard new team members?","What training gaps exist today?"], docs:["Staffing Plan","Ramp-Up Plan","Workload Projections"], tag:"🟧", tagLabel:"Workforce Constraint"}
-  ]},
-  {id:5, title:"Equipment, Fleet, Materials & Resources", questions:[
-    {id:13, base:"What equipment, tools, vehicles, and assets do you own or have guaranteed access to?", subs:["Which assets are most essential to your core services?","Which assets become bottlenecks when demand increases?"], docs:["Equipment List","Technical Approach","Production Rate"], tag:"🧰", tagLabel:"Asset Capability Profile"},
-    {id:14, base:"What materials or supplies do you rely on heavily, and what supply chain constraints affect you?", subs:["Do you procure materials in bulk or job-by-job?","Which vendors or suppliers are most reliable?"], docs:["Technical Approach","Contingency Plan","Schedule"], tag:"🔧", tagLabel:"Supply Chain Stability"}
-  ]},
-  {id:6, title:"Safety, QA/QC, Compliance & Risk Management", questions:[
-    {id:15, base:"What safety practices, logs, certifications, or protocols do you maintain?", subs:["Who is responsible for managing safety compliance?","How is safety documented — digital, paper logs, or nothing yet?"], docs:["Safety Plan","Compliance Attachments","QA/QC"], tag:"🟥", tagLabel:"Compliance Risk"},
-    {id:16, base:"What quality control steps do you always complete before finalizing a job?", subs:["Who performs final checks?","What documentation confirms quality?"], docs:["QA/QC Plan","Technical Approach","Performance Metrics"], tag:"🟩", tagLabel:"Performance Reliability"},
-    {id:17, base:"What risks do you actively avoid because they threaten performance, safety, or compliance?", subs:["What risks have caused problems in the past?","How do you determine when a risk is too high?"], docs:["Risk Plan","Assumptions","Go/No-Go Criteria"], tag:"🟥", tagLabel:"Risk Boundary"}
-  ]},
-  {id:7, title:"Financial Readiness, Pricing & Cash Flow", questions:[
-    {id:18, base:"How do you price your work, and what logic or methodology guides your pricing?", subs:["How do you calculate labor, materials, markup, and contingencies?","Do you use a standard rate sheet?"], docs:["Pricing Narrative","Budget","Cost Breakdown"], tag:"💲", tagLabel:"Financial Capability"},
-    {id:19, base:"What financial constraints impact your ability to take on larger projects?", subs:["Cash flow, credit, payroll cycles, equipment financing?","How many days can you float payroll on a new contract?"], docs:["Ramp-Up Plan","Pricing Assumptions","Financial Capacity"], tag:"⚠️", tagLabel:"Performance Risk"}
-  ]},
-  {id:8, title:"Technology, Systems & AI Readiness", questions:[
-    {id:20, base:"What systems run your business today — scheduling, dispatch, billing, proposals, safety?", subs:["Are these systems digital or manual?","Who on your team knows how to use each system?"], docs:["Management Plan","QA/QC","Workflow Narrative"], tag:"💻", tagLabel:"Digital Maturity"},
-    {id:21, base:"What technology should your industry be using today, and have you adopted it?", subs:["What tools are competitors using that you are not?","What technology gaps slow you down?"], docs:["Technical Approach","Capability Statement"], tag:"⚙️", tagLabel:"Competitive Gap"},
-    {id:22, base:"Are you currently using any form of AI in your business?", subs:["If yes, for what tasks?","If no, what concerns or barriers exist?"], docs:["Proposal Generation","Workflow Narrative"], tag:"🤖", tagLabel:"Automation Readiness"},
-    {id:23, base:"If you could automate three tasks tomorrow, what would they be and why?", subs:["What tasks feel repetitive or prone to delay?","What tasks create the most friction or errors?"], docs:["Management Plan","Efficiency Plan"], tag:"🔧", tagLabel:"Process Improvement"}
-  ]},
-  {id:9, title:"Past Performance, References & Client Experience", questions:[
-    {id:24, base:"What past jobs best represent the type of work you want to win in the future?", subs:["Why are these projects strong examples of your capabilities?","What measurable results or outcomes support this?"], docs:["Past Performance","Technical Approach","DSBS Narrative"], tag:"⭐", tagLabel:"Evidence of Capability"}
-  ]},
-  {id:10, title:"Subcontractors, Partners & Teaming", questions:[
-    {id:25, base:"Who do you subcontract to, and for what tasks?", subs:["How do you vet or qualify subcontractors?","What work do you refuse to subcontract?"], docs:["Subcontracting Plan","Technical Approach","Risk Plan"], tag:"🤝", tagLabel:"Teaming Structure"}
-  ]},
-  {id:11, title:"Risk Boundaries, No-Go Conditions & Decision Rules", questions:[
-    {id:26, base:"What forces an automatic no-bid decision for your company?", subs:["What red flags signal that a job is not a good fit?","What past experiences shaped these boundaries?"], docs:["Go/No-Go Criteria","Assumptions","Risk Management"], tag:"🚫", tagLabel:"Contract Risk Protection"}
-  ]}
-];
-
-const ALL_Q = SECTIONS.flatMap(s => s.questions);
-
-/* ============================================================
-   API HELPERS
-   ============================================================ */
-async function callClaude(prompt, maxTokens = 900) {
-  // Calls our Netlify serverless function — no API key in the browser
-  const response = await fetch(CFG.CLAUDE_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: maxTokens,
-      messages: [{ role: "user", content: prompt }]
-    })
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Claude API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return (data.content?.map(b => b.text || "").join("") || "")
-    .replace(/```json|```/g, "").trim();
-}
-}
-  
-function safeJsonParse(maybeJsonText) {
-  if (!maybeJsonText) throw new Error("Empty response from Claude");
-
-  let t = String(maybeJsonText)
-    .replace(/```json|```/g, "")
-    .trim();
-
-  const start = t.indexOf("{");
-  const end = t.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("No JSON object found in Claude response");
-  }
-
-  t = t.slice(start, end + 1);
-  return JSON.parse(t);
-}
-
-async function tailorQuestion(base, subs, industry, bizType, qNum) {
-  try {
-    const raw = await callClaude(
-      `Rewrite this procurement interview question for a ${industry} ${bizType} business. ` +
-      `Keep the same intent but use language specific to their trade and industry context. ` +
-      `Return ONLY valid JSON — no extra text:\n` +
-      `{"main":"rewritten question here","subs":["rewritten sub 1","rewritten sub 2"]}\n\n` +
-      `Original Q${qNum}: ${base}\n` +
-      `Original subs: ${subs.join(" | ")}`
-    );
-   const parsed = safeJsonParse(raw);
-    if (parsed.main && Array.isArray(parsed.subs)) return parsed;
-    return { main: base, subs };
-  } catch {
-    return { main: base, subs };
-  }
-}
-
-async function buildReport(answers, biz) {
-  const answerText = Object.entries(answers).map(([id, a]) => {
-    const q = ALL_Q.find(q => q.id === +id);
-    return `Q${id} (${q?.tagLabel || ""}): ${a}`;
-  }).join("\n\n");
-
-  const raw = await callClaude(
-    `You are a procurement capability analyst for 915 Gypsy LLC. ` +
-    `Analyze this small business interview and return ONLY valid JSON.\n\n` +
-    `Business: ${biz.name} | Industry: ${biz.industry} | Type: ${biz.bizType}\n\n` +
-    `ANSWERS:\n${answerText}\n\n` +
-    `Return this exact JSON structure (no markdown, no extra text):\n` +
-    `{\n` +
-    `  "canDo": [{"item":"...","evidence":"..."}],\n` +
-    `  "cannotDo": [{"item":"...","reason":"..."}],\n` +
-    `  "conditional": [{"item":"...","condition":"..."}],\n` +
-    `  "flags": [{"type":"gap|risk|opportunity","description":"..."}],\n` +
-    `  "proposalReadiness": {"score":7,"summary":"2-3 sentence assessment"},\n` +
-    `  "tileMapping": [\n` +
-    `    {"tile":"Corporate Documents","status":"ready|needs work|missing","note":"..."},\n` +
-    `    {"tile":"Capability Statement","status":"...","note":"..."},\n` +
-    `    {"tile":"Insurance","status":"...","note":"..."},\n` +
-    `    {"tile":"OSHA & Safety","status":"...","note":"..."},\n` +
-    `    {"tile":"Past Performance","status":"...","note":"..."},\n` +
-    `    {"tile":"Pricing","status":"...","note":"..."},\n` +
-    `    {"tile":"Project Portfolio","status":"...","note":"..."},\n` +
-    `    {"tile":"Compliance","status":"...","note":"..."},\n` +
-    `    {"tile":"Equipment & Fleet","status":"...","note":"..."},\n` +
-    `    {"tile":"Crew Qualifications","status":"...","note":"..."},\n` +
-    `    {"tile":"Financial Readiness","status":"...","note":"..."},\n` +
-    `    {"tile":"Bid Documents","status":"...","note":"..."},\n` +
-    `    {"tile":"Subcontractor Network","status":"...","note":"..."},\n` +
-    `    {"tile":"QA/QC Plan","status":"...","note":"..."},\n` +
-    `    {"tile":"Scheduling","status":"...","note":"..."},\n` +
-    `    {"tile":"AI & Technology","status":"...","note":"..."}\n` +
-    `  ]\n` +
-    `}`,
-    1200
-  );
-
-return safeJsonParse(raw);
-}
-
-async function submitToAirtable(biz, social, answers, report) {
-  // Calls our Netlify serverless function — no API key in the browser
-  const secAnswers = {};
-  SECTIONS.forEach(sec => {
-    const key = SEC_FIELD[sec.id];
-    const lines = sec.questions
-      .map(q => answers[q.id] ? `Q${q.id} — ${q.base}\n${answers[q.id]}` : null)
-      .filter(Boolean);
-    if (lines.length) secAnswers[key] = lines.join("\n\n─────\n\n");
-  });
-
-  const fields = {
-    [AT_FIELDS.name]:        biz.name,
-    [AT_FIELDS.industry]:    biz.industry,
-    [AT_FIELDS.bizType]:     biz.bizType,
-    [AT_FIELDS.date]:        new Date().toISOString().split("T")[0],
-    [AT_FIELDS.score]:       report.proposalReadiness?.score || 0,
-    [AT_FIELDS.canDo]:       report.canDo?.map(c => `✅ ${c.item}\n${c.evidence}`).join("\n\n") || "",
-    [AT_FIELDS.cannotDo]:    report.cannotDo?.map(c => `🚫 ${c.item}\n${c.reason}`).join("\n\n") || "",
-    [AT_FIELDS.conditional]: report.conditional?.map(c => `⚠️ ${c.item}\nOnly if: ${c.condition}`).join("\n\n") || "",
-    [AT_FIELDS.flags]:       report.flags?.map(f => `[${f.type.toUpperCase()}] ${f.description}`).join("\n\n") || "",
-    [AT_FIELDS.tiles]:       report.tileMapping?.map(t => `${(t.status||"").toUpperCase()} — ${t.tile}: ${t.note}`).join("\n") || "",
-  };
-
-  const socialFields = ["website","linkedin","facebook","instagram","tiktok","youtube","other"];
-  socialFields.forEach(k => { if (social[k]) fields[AT_FIELDS[k]] = social[k]; });
-  Object.entries(secAnswers).forEach(([key, val]) => { fields[AT_FIELDS[key]] = val; });
-
-  const res = await fetch(CFG.AIRTABLE_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fields })
-  });
-
-  return res.ok;
-}
-
-/* ============================================================
-   SPEECH RECOGNITION HOOK
-   ============================================================ */
-function useVoice(onFinal) {
-  const [isOn, setIsOn] = useState(false);
-  const [interim, setInterim] = useState("");
-  const recRef = useRef(null);
-  const supported = typeof window !== "undefined" &&
-    !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-
-  const start = useCallback(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new SR();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = "en-US";
-    recRef.current = rec;
-
-    rec.onresult = e => {
-      let final = "", inter = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        e.results[i].isFinal ? (final += t + " ") : (inter += t);
-      }
-      if (final) onFinal(final);
-      setInterim(inter);
-    };
-
-    rec.onerror = e => { console.warn("Speech error:", e.error); stop(); };
-    rec.onend = () => { setIsOn(false); setInterim(""); };
-    rec.start();
-    setIsOn(true);
-  }, [onFinal]);
-
-  const stop = useCallback(() => {
-    recRef.current?.stop();
-    setIsOn(false);
-    setInterim("");
-  }, []);
-
-  return { isOn, interim, start, stop, supported };
-}
-
-/* ============================================================
-   LOGO COMPONENT
-   ============================================================ */
-function Logo({ size = 44 }) {
-  const [hasError, setHasError] = useState(false);
-  if (hasError) {
-    return <span className="logo-fallback" style={{ fontSize: size * 0.5 }}>915 GYPSY</span>;
-  }
-  return (
-    <img
-      src={LOGO_URL}
-      alt="915 Gypsy"
-      className="logo-img"
-      style={{ height: size }}
-      onError={() => setHasError(true)}
-    />
-  );
-}
-
-/* ============================================================
-   HEADER COMPONENT
-   ============================================================ */
-function Header({ bizName }) {
-  return (
-    <header className="header">
-      <Logo size={36} />
-      <div className="header__divider" />
-      <div>
-        <div className="header__title">Procurement Capability Dump™</div>
-        {bizName && <div className="header__sub">{bizName}</div>}
-      </div>
-      <div className="header__badge">Proprietary · 915 Gypsy LLC</div>
-    </header>
-  );
-}
-
-/* ============================================================
-   ONBOARDING SCREEN
-   ============================================================ */
-function Onboarding({ onStart }) {
-  const [biz, setBiz] = useState({ name: "", industry: "", bizType: "" });
-  const [social, setSocial] = useState({
-    website: "", linkedin: "", facebook: "",
-    instagram: "", tiktok: "", youtube: "", other: ""
-  });
-  const [showSocial, setShowSocial] = useState(false);
-
-  const isValid = biz.name.trim() && biz.industry && biz.bizType;
-
-  const socialFields = [
-    { key: "website",   label: "Website",   placeholder: "https://yoursite.com" },
-    { key: "linkedin",  label: "LinkedIn",  placeholder: "https://linkedin.com/company/..." },
-    { key: "facebook",  label: "Facebook",  placeholder: "https://facebook.com/..." },
-    { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/..." },
-    { key: "tiktok",    label: "TikTok",    placeholder: "https://tiktok.com/@..." },
-    { key: "youtube",   label: "YouTube",   placeholder: "https://youtube.com/..." },
-    { key: "other",     label: "Other",     placeholder: "Any other platform URL" },
-  ];
-
-  return (
-    <div className="page">
-      <Header />
-      <div className="content-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 48 }}>
-        <div style={{ width: "100%" }}>
-          <div className="hero fade-up">
-            <div className="hero__logo-wrap">
-              <Logo size={96} />
-            </div>
-            <div className="hero__divider" />
-            <h1 className="hero__title">Procurement Capability Dump™</h1>
-            <p className="hero__sub">
-              A candid, voice-first diagnostic that captures what your company <em>actually</em> does —
-              so your proposals reflect reality, not guesswork.
-            </p>
-          </div>
-
-          <div className="card fade-up" style={{ animationDelay: "0.1s" }}>
-            <div className="alert alert--info" style={{ marginBottom: 20 }}>
-              <span className="alert__icon">🎙️</span>
-              <div>
-                <div className="alert__title">This is a voice interview.</div>
-                <div className="alert__body">
-                  Answer like you're telling someone about your company at the bar — honest, real, and detailed.
-                  Don't filter yourself. The more candid you are, the stronger your proposals will be.
-                </div>
-              </div>
-            </div>
-
-            <label className="label">Business Name *</label>
-            <input
-              className="input"
-              type="text"
-              placeholder="Your legal business name"
-              value={biz.name}
-              onChange={e => setBiz({ ...biz, name: e.target.value })}
-            />
-
-            <label className="label">Industry *</label>
-            <select
-              className="select"
-              value={biz.industry}
-              onChange={e => setBiz({ ...biz, industry: e.target.value })}
-            >
-              <option value="">Select your industry...</option>
-              {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-            </select>
-
-            <label className="label">Business Type *</label>
-            <select
-              className="select"
-              value={biz.bizType}
-              onChange={e => setBiz({ ...biz, bizType: e.target.value })}
-            >
-              <option value="">Select your business type...</option>
-              {BUSINESS_TYPES.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
-
-            <button
-              className="social-toggle"
-              onClick={() => setShowSocial(!showSocial)}
-            >
-              {showSocial ? "▲ Hide Digital Presence" : "▼ Add Website & Social Media (optional)"}
-            </button>
-
-            {showSocial && (
-              <div className="social-panel">
-                <p className="social-hint">
-                  These links help validate your capabilities and find portfolio content for proposals.
-                </p>
-                {socialFields.map(({ key, label, placeholder }) => (
-                  <div key={key}>
-                    <label className="label" style={{ marginTop: 8 }}>{label}</label>
-                    <input
-                      className="input"
-                      type="url"
-                      placeholder={placeholder}
-                      value={social[key]}
-                      onChange={e => setSocial({ ...social, [key]: e.target.value })}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <button
-              className="btn btn--primary btn--full"
-              style={{ marginTop: 24, fontSize: 15, padding: "14px 24px" }}
-              disabled={!isValid}
-              onClick={() => onStart(biz, social)}
-            >
+            <button onClick={()=>onStart(biz,social)} disabled={!valid} style={{marginTop:22,width:"100%",padding:"14px 24px",background:valid?B.rust:B.mid,color:valid?B.white:"#9a7060",border:"none",borderRadius:8,fontWeight:800,fontSize:15,cursor:valid?"pointer":"not-allowed"}}>
               Begin Capability Dump →
             </button>
           </div>
-
-          <p style={{ textAlign: "center", color: "var(--border)", fontSize: 12, marginTop: 14, lineHeight: 1.7 }}>
-            26 questions · 11 sections · AI-tailored to your industry · Your answers go directly to 915 Gypsy
-          </p>
+          <p style={{textAlign:"center",color:B.border,fontSize:12,marginTop:12}}>26 questions · 11 sections · 3 parts each · AI-tailored to your industry · Answers go directly to 915 Gypsy</p>
         </div>
       </div>
     </div>
   );
 }
 
-/* ============================================================
-   QUESTION SCREEN
-   ============================================================ */
-function QuestionScreen({ question, tailored, answer, onChange, onNext, onBack, qi, total }) {
-  const q = tailored || { main: question.base, subs: question.subs };
-  const [showTypeArea, setShowTypeArea] = useState(false);
-  const textRef = useRef(answer || "");
-
-  const { isOn, interim, start, stop, supported } = useVoice(transcript => {
-    textRef.current = (textRef.current + " " + transcript).trim();
+function Question({question,tailored,answer,onChange,onNext,onBack,qi,total,isLast}){
+  const q=tailored||{main:question.base,subs:question.subs};
+  const[showType,setShowType]=useState(false);
+  const textRef=useRef(answer||"");
+  const{on,interim,start,stop,supported}=useVoice(t=>{
+    textRef.current=(textRef.current+" "+t).trim();
     onChange(textRef.current);
   });
+  useEffect(()=>{textRef.current=answer||"";},[answer]);
+  const has=(answer||"").trim().length>0;
+  const pct=Math.round(((qi+1)/total)*100);
+  const sec=SECTIONS.find(s=>s.questions.some(sq=>sq.id===question.id));
 
-  useEffect(() => { textRef.current = answer || ""; }, [answer]);
-
-  const hasAnswer = (answer || "").trim().length > 0;
-  const pct = Math.round(((qi + 1) / total) * 100);
-  const section = SECTIONS.find(s => s.questions.some(sq => sq.id === question.id));
-
-  return (
-    <div className="page">
-      <Header />
-      <div className="content-wrap">
+  return(
+    <div style={{minHeight:"100vh",background:B.bg,display:"flex",flexDirection:"column"}}>
+      <Header/>
+      <div style={{flex:1,padding:"24px 16px",maxWidth:700,margin:"0 auto",width:"100%"}}>
         {/* Progress */}
-        <div className="progress-wrap">
-          <div className="progress-meta">
-            <span>{section?.title}</span>
+        <div style={{marginBottom:18}}>
+          <div style={{display:"flex",justifyContent:"space-between",color:B.gold,fontSize:12,marginBottom:6,fontWeight:600}}>
+            <span>{sec?.title}</span>
             <span>Q{question.id} of {total} · {pct}%</span>
           </div>
-          <div className="progress-track">
-            <div className="progress-bar" style={{ width: `${pct}%` }} />
+          <div style={{background:B.mid,borderRadius:99,height:6}}>
+            <div style={{background:B.rust,width:`${pct}%`,height:6,borderRadius:99,transition:"width .4s"}}/>
           </div>
         </div>
 
-        <div className="card fade-up">
+        <div style={cardS}>
           {/* Tag */}
-          <div className="q-header">
-            <span className="q-tag-emoji">{question.tag}</span>
-            <span className="q-tag-label">{question.tagLabel}</span>
+          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:14}}>
+            <span style={{fontSize:18}}>{question.tag}</span>
+            <span style={{fontSize:11,fontWeight:800,letterSpacing:1,color:B.gold,textTransform:"uppercase"}}>{question.tagLabel}</span>
+            <span style={{marginLeft:"auto",fontSize:11,color:B.border,fontWeight:600}}>Answer all 3 parts</span>
           </div>
 
-          {/* Main question */}
-          <h2 className="q-title">{q.main}</h2>
-
-          {/* Hints */}
-          <div className="q-hints">
-            <div className="q-hints__label">Think about:</div>
-            {q.subs.map((s, i) => (
-              <div key={i} className="q-hint-item">
-                <span className="q-hint-arrow">→</span>
-                <span>{s}</span>
+          {/* 3-part question block */}
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:22}}>
+            {/* Part 1 */}
+            <div style={{background:`${B.rust}18`,border:`1px solid ${B.rust}`,borderRadius:10,padding:"12px 16px"}}>
+              <div style={{fontSize:10,fontWeight:900,letterSpacing:1.5,color:B.rust,textTransform:"uppercase",marginBottom:6}}>Part 1 — Main Question</div>
+              <div style={{color:B.sand,fontSize:17,fontWeight:800,lineHeight:1.55}}>{q.main}</div>
+            </div>
+            {/* Part 2 */}
+            <div style={{background:B.mid,border:`1px solid ${B.border}`,borderRadius:10,padding:"12px 16px"}}>
+              <div style={{fontSize:10,fontWeight:900,letterSpacing:1.5,color:B.gold,textTransform:"uppercase",marginBottom:6}}>Part 2 — Follow-Up</div>
+              <div style={{display:"flex",gap:8,color:B.sand,fontSize:14,lineHeight:1.6}}>
+                <span style={{color:B.rust,fontWeight:900,flexShrink:0}}>→</span>
+                <span>{q.subs[0]}</span>
               </div>
-            ))}
+            </div>
+            {/* Part 3 */}
+            <div style={{background:B.mid,border:`1px solid ${B.border}`,borderRadius:10,padding:"12px 16px"}}>
+              <div style={{fontSize:10,fontWeight:900,letterSpacing:1.5,color:B.gold,textTransform:"uppercase",marginBottom:6}}>Part 3 — Follow-Up</div>
+              <div style={{display:"flex",gap:8,color:B.sand,fontSize:14,lineHeight:1.6}}>
+                <span style={{color:B.rust,fontWeight:900,flexShrink:0}}>→</span>
+                <span>{q.subs[1]}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Voice recorder */}
-          <div className="voice-center">
-            {isOn ? (
+          {/* Voice */}
+          <div style={{textAlign:"center",marginBottom:18}}>
+            {on?(
               <div>
-                <div className="pulse-ring">
-                  <div className="pulse-ring__ring" />
-                  <div className="pulse-ring__ring" />
-                  <div className="pulse-ring__core">🎙️</div>
+                <div style={{position:"relative",width:80,height:80,margin:"0 auto 10px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <div style={{position:"absolute",width:80,height:80,borderRadius:"50%",background:`${B.rust}22`,animation:"pulse 1.5s ease-out infinite"}}/>
+                  <div style={{position:"absolute",width:60,height:60,borderRadius:"50%",background:`${B.rust}33`,animation:"pulse 1.5s ease-out .35s infinite"}}/>
+                  <div style={{width:48,height:48,borderRadius:"50%",background:B.rust,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1,fontSize:22}}>🎙️</div>
                 </div>
-                <p className="listening-label">Listening… speak naturally</p>
-                {interim && <p className="interim-text">{interim}</p>}
-                <button
-                  className="btn btn--secondary btn--pill btn--sm"
-                  onClick={stop}
-                >
-                  ⏹ Stop Recording
-                </button>
+                <p style={{color:B.rust,fontWeight:800,fontSize:13,margin:"0 0 6px"}}>Listening… cover all 3 parts</p>
+                {interim&&<p style={{color:B.gold,fontSize:12,fontStyle:"italic",maxWidth:400,margin:"0 auto 10px",lineHeight:1.5}}>{interim}</p>}
+                <button onClick={stop} style={{padding:"8px 24px",background:B.mid,color:B.sand,border:`1px solid ${B.border}`,borderRadius:99,fontWeight:700,fontSize:13,cursor:"pointer"}}>⏹ Stop Recording</button>
               </div>
-            ) : (
+            ):(
               <div>
-                {supported ? (
-                  <button
-                    className={`mic-btn ${hasAnswer ? "mic-btn--has-answer" : "mic-btn--idle"}`}
-                    onClick={start}
-                  >
-                    🎙️ {hasAnswer ? "Add More" : "Tap to Speak"}
+                {supported?(
+                  <button onClick={start} style={{padding:"14px 40px",background:has?B.mid:B.rust,color:has?B.rust:B.white,border:has?`2px solid ${B.rust}`:"none",borderRadius:99,fontWeight:900,fontSize:16,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:10}}>
+                    🎙️ {has?"Add More":"Tap to Speak — Cover All 3 Parts"}
                   </button>
-                ) : (
-                  <p style={{ color: "var(--gold)", fontSize: 13 }}>
-                    ⚠️ Voice not supported in this browser — please type your answer below.
-                  </p>
+                ):(
+                  <p style={{color:B.gold,fontSize:13}}>⚠️ Voice not supported — please type below.</p>
                 )}
-                <div className="type-toggle-wrap">
-                  <button
-                    style={{ background: "none", border: "none", color: "var(--border)", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
-                    onClick={() => setShowTypeArea(!showTypeArea)}
-                  >
-                    {showTypeArea ? "Hide keyboard" : "Prefer to type?"}
+                <div style={{marginTop:8}}>
+                  <button onClick={()=>setShowType(!showType)} style={{background:"none",border:"none",color:B.border,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
+                    {showType?"Hide keyboard":"Prefer to type?"}
                   </button>
                 </div>
               </div>
@@ -3108,47 +407,39 @@ function QuestionScreen({ question, tailored, answer, onChange, onNext, onBack, 
           </div>
 
           {/* Text area */}
-          {(showTypeArea || hasAnswer) && (
-            <div style={{ marginBottom: 20 }}>
-              <div className="q-response-label">
-                {hasAnswer ? "Your response (edit if needed):" : "Type your answer:"}
+          {(showType||has)&&(
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,color:B.gold,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+                {has?"Your response — make sure you've covered all 3 parts:":"Type your answer (cover all 3 parts):"}
               </div>
               <textarea
-                className="textarea"
-                placeholder="Speak or type here…"
-                value={answer || ""}
-                onChange={e => {
-                  textRef.current = e.target.value;
-                  onChange(e.target.value);
-                }}
+                style={{width:"100%",minHeight:130,background:B.mid,border:`1px solid ${B.border}`,borderRadius:8,padding:12,fontSize:14,fontFamily:"inherit",color:B.sand,resize:"vertical",boxSizing:"border-box",lineHeight:1.7}}
+                placeholder="Cover Part 1, Part 2, and Part 3 in your answer…"
+                value={answer||""}
+                onChange={e=>{textRef.current=e.target.value;onChange(e.target.value);}}
               />
             </div>
           )}
 
-          {/* Navigation */}
-          <div className="q-nav">
-            {qi > 0 && (
-              <button className="btn btn--secondary" onClick={onBack}>
-                ← Back
-              </button>
+          {/* Nav buttons — always visible */}
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            {qi>0&&(
+              <button onClick={onBack} style={{flex:1,padding:"12px 0",background:B.mid,color:B.sand,border:`1px solid ${B.border}`,borderRadius:8,fontWeight:700,fontSize:14,cursor:"pointer"}}>← Back</button>
             )}
             <button
-              className="btn btn--primary"
-              disabled={!hasAnswer}
               onClick={onNext}
-              style={{ flex: qi > 0 ? undefined : "1 1 100%" }}
+              style={{flex:2,padding:"13px 24px",background:has?B.rust:B.mid,color:has?B.white:B.border,border:has?"none":`1px solid ${B.border}`,borderRadius:8,fontWeight:800,fontSize:14,cursor:"pointer",transition:"all .2s"}}
             >
-              {qi === total - 1 ? "Submit & Generate Report →" : "Next Question →"}
+              {isLast?"Submit to 915 Gypsy →":"Next Question →"}
+              {!has&&<span style={{fontSize:11,display:"block",fontWeight:400,marginTop:2,color:B.border}}>(answer optional — tap to skip)</span>}
             </button>
           </div>
 
-          {/* Doc tags */}
-          <div className="doc-tags">
-            <div className="doc-tags__label">Feeds into proposal documents:</div>
-            <div className="doc-tags__list">
-              {question.docs.map(d => (
-                <span key={d} className="chip">{d}</span>
-              ))}
+          {/* Docs */}
+          <div style={{marginTop:16,paddingTop:12,borderTop:`1px solid ${B.border}`}}>
+            <div style={{fontSize:11,color:B.border,marginBottom:5}}>Feeds into proposal documents:</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+              {question.docs.map(d=><span key={d} style={{background:B.mid,color:B.gold,fontSize:11,padding:"3px 10px",borderRadius:99,border:`1px solid ${B.border}`}}>{d}</span>)}
             </div>
           </div>
         </div>
@@ -3157,368 +448,138 @@ function QuestionScreen({ question, tailored, answer, onChange, onNext, onBack, 
   );
 }
 
-/* ============================================================
-   LOADING SCREEN
-   ============================================================ */
-function LoadingScreen({ message }) {
-  return (
-    <div className="page">
-      <Header />
-      <div className="loading-screen">
-        <div className="loading-logo-wrap">
-          <Logo size={56} />
-        </div>
-        <div className="spinner" />
-        <p className="loading-msg">{message}</p>
-      </div>
-    </div>
-  );
-}
+function Completion({biz,score,submitted}){
+  const scoreCol=score>=7?B.greenBright:score>=5?B.gold:B.rust;
+  const scoreMsg=score>=8?"Your company is well-positioned. 915 Gypsy has strong material to work with.":score>=6?"Good foundation. A few areas will need more detail — 915 Gypsy will follow up.":score>=4?"Solid start. Some key areas need more depth before proposals can be built out.":"Early stage. 915 Gypsy will be in touch to gather more information in critical areas.";
+  return(
+    <div style={{minHeight:"100vh",background:B.bg,display:"flex",flexDirection:"column"}}>
+      <Header bizName={biz.name}/>
+      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"40px 16px"}}>
+        <div style={{maxWidth:520,width:"100%",textAlign:"center",animation:"fadeIn .6s ease"}}>
+          <Logo size={72}/>
+          <div style={{width:60,height:3,background:B.rust,margin:"20px auto 24px",borderRadius:2}}/>
 
-/* ============================================================
-   REPORT SCREEN
-   ============================================================ */
-function ReportScreen({ report, biz, social, answers, submitted }) {
-  const [activeTab, setActiveTab] = useState("summary");
-  const score = report.proposalReadiness?.score || 0;
-  const scoreColor = score >= 7 ? "var(--rust)" : score >= 4 ? "var(--gold)" : "var(--danger)";
-
-  function copyReport() {
-    let out = `915 GYPSY LLC — PROCUREMENT CAPABILITY DUMP™\n${"═".repeat(52)}\n`;
-    out += `Company: ${biz.name}\nIndustry: ${biz.industry}\nType: ${biz.bizType}\n`;
-    out += `Date: ${new Date().toLocaleDateString()}\n`;
-    if (social.website) out += `Website: ${social.website}\n`;
-    out += `\nPROPOSAL READINESS SCORE: ${score}/10\n\n`;
-    out += `ASSESSMENT\n${report.proposalReadiness?.summary}\n\n`;
-    out += `CAN DO\n${report.canDo?.map(c => `• ${c.item}\n  ${c.evidence}`).join("\n\n")}\n\n`;
-    out += `CANNOT DO\n${report.cannotDo?.map(c => `• ${c.item}\n  ${c.reason}`).join("\n\n")}\n\n`;
-    out += `CONDITIONAL\n${report.conditional?.map(c => `• ${c.item}\n  Only if: ${c.condition}`).join("\n\n")}\n\n`;
-    out += `FLAGS\n${report.flags?.map(f => `[${f.type.toUpperCase()}] ${f.description}`).join("\n")}\n\n`;
-    out += `TILE READINESS\n${report.tileMapping?.map(t => `${(t.status||"").toUpperCase().padEnd(12)} ${t.tile}: ${t.note}`).join("\n")}\n\n`;
-    out += `FULL ANSWERS\n${"─".repeat(44)}\n`;
-    SECTIONS.forEach(sec => {
-      out += `\nSECTION ${sec.id}: ${sec.title.toUpperCase()}\n`;
-      sec.questions.forEach(q => {
-        if (answers[q.id]) out += `\nQ${q.id}: ${q.base}\n${answers[q.id]}\n`;
-      });
-    });
-    out += `\n${"═".repeat(52)}\n© 915 Gypsy LLC · Procurement Capability Dump™ · All rights reserved`;
-    navigator.clipboard.writeText(out).catch(() => {});
-    alert("Full report copied to clipboard!");
-  }
-
-  const tabs = [
-    { id: "summary",      label: "📊 Summary" },
-    { id: "capabilities", label: "✅ Capabilities" },
-    { id: "tiles",        label: "📁 Tile Readiness" },
-    { id: "answers",      label: "📝 Full Answers" },
-  ];
-
-  const tileStatusClass = s => {
-    if (s === "ready")      return "badge--ready";
-    if (s === "needs work") return "badge--needs";
-    return "badge--missing";
-  };
-
-  const flagColor = type => {
-    if (type === "risk")        return "var(--danger)";
-    if (type === "gap")         return "var(--gold)";
-    if (type === "opportunity") return "var(--rust)";
-    return "var(--gold)";
-  };
-
-  const flagIcon = type => {
-    if (type === "risk")        return "🚨";
-    if (type === "gap")         return "⚠️";
-    if (type === "opportunity") return "💡";
-    return "📌";
-  };
-
-  return (
-    <div className="page">
-      <Header bizName={biz.name} />
-      <div className="content-wrap content-wrap--wide">
-
-        {/* Status banner */}
-        {submitted ? (
-          <div className="alert alert--success">
-            <span className="alert__icon">✅</span>
-            <div>
-              <div className="alert__title">Successfully submitted to 915 Gypsy</div>
-              <div className="alert__body">Jesse will review your Capability Dump and be in touch.</div>
+          {/* Submitted banner */}
+          <div style={{background:"#1a3a0c",border:`1px solid #4a8a2a`,borderRadius:14,padding:"20px 24px",marginBottom:24}}>
+            <div style={{fontSize:36,marginBottom:10}}>✅</div>
+            <div style={{color:B.greenBright,fontWeight:900,fontSize:18,marginBottom:6}}>Submitted to 915 Gypsy</div>
+            <div style={{color:"#6ab52a",fontSize:14,lineHeight:1.7}}>
+              <strong>{biz.name}</strong> — your Capability Dump is in.<br/>
+              Jesse and the team are processing your submission now.
             </div>
           </div>
-        ) : (
-          <div className="alert alert--warn">
-            <span className="alert__icon">⚠️</span>
-            <div className="alert__title">
-              Use the Copy Report button below to save your results.
+
+          {/* Score card */}
+          <div style={{background:B.card,border:`2px solid ${scoreCol}`,borderRadius:14,padding:"24px 28px",marginBottom:20}}>
+            <div style={{fontSize:12,fontWeight:800,letterSpacing:1.5,color:B.gold,textTransform:"uppercase",marginBottom:10}}>Proposal Readiness Score</div>
+            <div style={{fontSize:62,fontWeight:900,color:scoreCol,lineHeight:1,marginBottom:4}}>
+              {score}<span style={{fontSize:28,color:B.border}}>/10</span>
             </div>
-          </div>
-        )}
-
-        {/* Report hero */}
-        <div className="report-hero fade-up">
-          <div style={{ width: 50, height: 3, background: "var(--rust)", margin: "0 auto 18px", borderRadius: 2 }} />
-          <h1 className="report-title">Capability Summary Report</h1>
-          <p className="report-meta">{biz.name} · {biz.industry} · {biz.bizType}</p>
-          <div className="score-badge" style={{ border: `2px solid ${scoreColor}` }}>
-            <span className="score-text" style={{ color: scoreColor }}>
-              Proposal Readiness: {score}/10
-            </span>
-          </div>
-          <div>
-            <button className="btn btn--ghost btn--sm" onClick={copyReport}>
-              📋 Copy Full Report
-            </button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="report-tabs">
-          {tabs.map(t => (
-            <button
-              key={t.id}
-              className={`tab-btn ${activeTab === t.id ? "tab-btn--active" : "tab-btn--inactive"}`}
-              onClick={() => setActiveTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* TAB: Summary */}
-        {activeTab === "summary" && (
-          <div style={{ display: "grid", gap: 16 }}>
-            <div className="card fade-up">
-              <h3 style={{ color: "var(--sand)", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>Assessment</h3>
-              <p style={{ color: "var(--gold)", fontSize: 14, lineHeight: 1.9, margin: 0 }}>
-                {report.proposalReadiness?.summary}
-              </p>
+            <div style={{width:100,height:6,background:B.mid,borderRadius:99,margin:"14px auto",overflow:"hidden"}}>
+              <div style={{height:6,background:scoreCol,width:`${score*10}%`,borderRadius:99,transition:"width 1s"}}/>
             </div>
-
-            {report.flags?.length > 0 && (
-              <div className="card fade-up" style={{ animationDelay: "0.1s" }}>
-                <h3 style={{ color: "var(--sand)", fontWeight: 800, fontSize: 15, marginBottom: 14 }}>Flags & Findings</h3>
-                {report.flags.map((f, i) => (
-                  <div key={i} className="flag-item" style={{ borderLeft: `3px solid ${flagColor(f.type)}` }}>
-                    <span className="flag-item__icon">{flagIcon(f.type)}</span>
-                    <div>
-                      <div className="flag-item__type" style={{ color: flagColor(f.type) }}>{f.type}</div>
-                      <p className="flag-item__desc">{f.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <p style={{color:B.sand,fontSize:14,lineHeight:1.7,margin:0}}>{scoreMsg}</p>
           </div>
-        )}
 
-        {/* TAB: Capabilities */}
-        {activeTab === "capabilities" && (
-          <div style={{ display: "grid", gap: 16 }}>
+          {/* What happens next */}
+          <div style={{background:B.card,border:`1px solid ${B.border}`,borderRadius:14,padding:"20px 24px",marginBottom:20,textAlign:"left"}}>
+            <div style={{fontSize:12,fontWeight:800,letterSpacing:1.5,color:B.gold,textTransform:"uppercase",marginBottom:14}}>What Happens Next</div>
             {[
-              { label: "✅ CAN DO",     items: report.canDo,       accent: "var(--rust)",   sub: c => c.evidence },
-              { label: "🚫 CANNOT DO",  items: report.cannotDo,    accent: "var(--danger)", sub: c => c.reason },
-              { label: "⚠️ CONDITIONAL",items: report.conditional, accent: "var(--gold)",   sub: c => `Only if: ${c.condition}` },
-            ].map(({ label, items, accent, sub }) => (
-              <div key={label} className="card" style={{ borderLeft: `4px solid ${accent}` }}>
-                <h3 style={{ color: "var(--sand)", fontWeight: 900, fontSize: 15, marginBottom: 16 }}>{label}</h3>
-                {items?.length ? items.map((c, i) => (
-                  <div key={i} className="cap-item">
-                    <div className="cap-item__title">{c.item}</div>
-                    <div className="cap-item__sub">{sub(c)}</div>
-                  </div>
-                )) : (
-                  <div style={{ color: "var(--border)", fontSize: 13 }}>None identified</div>
-                )}
+              {icon:"📥",text:"Your answers are being reviewed by 915 Gypsy"},
+              {icon:"📋",text:"A capability profile will be built from your responses"},
+              {icon:"📞",text:"Jesse will reach out if more detail is needed in any area"},
+              {icon:"🚀",text:"Your first proposal-ready documents will be drafted"}
+            ].map((item,i)=>(
+              <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<3?12:0}}>
+                <span style={{fontSize:18,flexShrink:0}}>{item.icon}</span>
+                <span style={{color:B.sand,fontSize:14,lineHeight:1.6}}>{item.text}</span>
               </div>
             ))}
           </div>
-        )}
 
-        {/* TAB: Tile Readiness */}
-        {activeTab === "tiles" && (
-          <div className="card fade-up">
-            <h3 style={{ color: "var(--sand)", fontWeight: 800, fontSize: 15, marginBottom: 18 }}>Proposal Tile Readiness</h3>
-            {report.tileMapping?.map((t, i) => (
-              <div key={i} className="tile-row">
-                <span className={`badge ${tileStatusClass(t.status)}`} style={{ flexShrink: 0, marginTop: 2 }}>
-                  {(t.status || "unknown").toUpperCase()}
-                </span>
-                <div>
-                  <div className="tile-row__name">{t.tile}</div>
-                  <div className="tile-row__note">{t.note}</div>
-                </div>
-              </div>
-            ))}
+          {!submitted&&(
+            <div style={{background:B.mid,border:`1px solid ${B.gold}`,borderRadius:10,padding:14,marginBottom:16}}>
+              <p style={{color:B.gold,fontSize:13,margin:0}}>⚠️ Note: Airtable submission encountered an issue, but your answers were recorded. Jesse will still receive your information.</p>
+            </div>
+          )}
+
+          <div style={{padding:14,background:B.card,borderRadius:10,border:`1px solid ${B.border}`}}>
+            <Logo size={24}/>
+            <p style={{color:B.border,fontSize:11,margin:"8px 0 0"}}>© 915 Gypsy LLC · Procurement Capability Dump™ is a proprietary diagnostic tool · All rights reserved</p>
           </div>
-        )}
-
-        {/* TAB: Full Answers */}
-        {activeTab === "answers" && (
-          <div>
-            {SECTIONS.map(sec => {
-              const hasAnswers = sec.questions.some(q => answers[q.id]);
-              if (!hasAnswers) return null;
-              return (
-                <div key={sec.id} style={{ marginBottom: 28 }}>
-                  <div className="section-divider">
-                    <div className="section-divider__line" />
-                    <span className="section-divider__label">Section {sec.id}: {sec.title}</span>
-                    <div className="section-divider__line" />
-                  </div>
-                  {sec.questions.map(q => answers[q.id] && (
-                    <div key={q.id} className="card answer-card">
-                      <div className="answer-card__meta">{q.tag} Q{q.id} — {q.tagLabel}</div>
-                      <div className="answer-card__q">{q.base}</div>
-                      <div className="answer-card__body">{answers[q.id]}</div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="report-footer">
-          <Logo size={30} />
-          <p className="report-footer__copy">
-            © 915 Gypsy LLC · Procurement Capability Dump™ is a proprietary diagnostic tool · All rights reserved
-          </p>
         </div>
       </div>
     </div>
   );
 }
 
-/* ============================================================
-   ROOT APP COMPONENT
-   ============================================================ */
-function App() {
-  const [stage, setStage] = useState("onboard");
-  const [biz, setBiz] = useState(null);
-  const [social, setSocial] = useState({});
-  const [tailored, setTailored] = useState({});
-  const [answers, setAnswers] = useState({});
-  const [qi, setQi] = useState(0);
-  const [report, setReport] = useState(null);
-  const [submitted, setSubmitted] = useState(false);
-  const [loadMsg, setLoadMsg] = useState("");
+function App(){
+  const[stage,setStage]=useState("onboard");
+  const[biz,setBiz]=useState(null);
+  const[social,setSocial]=useState({});
+  const[tailored,setTailored]=useState({});
+  const[answers,setAnswers]=useState({});
+  const[qi,setQi]=useState(0);
+  const[score,setScore]=useState(0);
+  const[submitted,setSubmitted]=useState(false);
+  const[loadMsg,setLoadMsg]=useState("");
 
-  async function handleStart(bizInfo, socialInfo) {
-    setBiz(bizInfo);
-    setSocial(socialInfo);
+  async function handleStart(bizInfo,socialInfo){
+    setBiz(bizInfo);setSocial(socialInfo);
     setStage("tailoring");
-    setLoadMsg(`Tailoring your ${ALL_Q.length} questions for a ${bizInfo.industry} company…`);
-
-    const result = {};
-    for (const q of ALL_Q) {
-      result[q.id] = await tailorQuestion(q.base, q.subs, bizInfo.industry, bizInfo.bizType, q.id);
+    setLoadMsg(`Tailoring your 26 questions for a ${bizInfo.industry} ${bizInfo.bizType} company…`);
+    const result={};
+    for(const q of ALL_Q){
+      result[q.id]=await tailorQ(q.base,q.subs,bizInfo.industry,bizInfo.bizType,q.id);
     }
     setTailored(result);
     setStage("interview");
   }
 
-  async function handleNext() {
-    if (qi < ALL_Q.length - 1) {
-      setQi(qi + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
-    setStage("generating");
-    setLoadMsg("Analyzing your responses and building your Capability Summary Report…");
-
-    try {
-      const r = await buildReport(answers, biz);
-      setReport(r);
-
-      setLoadMsg("Submitting your report to 915 Gypsy…");
-      try {
-        const ok = await submitToAirtable(biz, social, answers, r);
-        setSubmitted(ok);
-      } catch {
-        setSubmitted(false);
-      }
-
-      setStage("report");
-    } catch (err) {
-      console.error("Report generation error:", err);
-      setReport({
-        canDo: [],
-        cannotDo: [],
-        conditional: [],
-        flags: [{
-          type: "gap",
-          description: `Report generation failed: ${err.message || "Unknown error"}. Please copy your answers manually and contact 915 Gypsy.`
-        }],
-        proposalReadiness: { score: 0, summary: "Error generating report. Please contact 915 Gypsy with your answers." },
-        tileMapping: []
-      });
-      setSubmitted(false);
-      setStage("report");
-    }
+  async function handleNext(){
+    if(qi<ALL_Q.length-1){setQi(qi+1);return;}
+    // Last question — submit
+    setStage("submitting");
+    setLoadMsg("Calculating your readiness score and submitting to 915 Gypsy…");
+    const s=calcScore(answers);
+    setScore(s);
+    try{
+      const ok=await submitToAirtable(biz,social,answers,s);
+      setSubmitted(ok);
+    }catch{setSubmitted(false);}
+    setStage("complete");
   }
 
-  function handleBack() {
-    if (qi > 0) {
-      setQi(qi - 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }
+  const curQ=ALL_Q[qi];
 
-  function handleAnswerChange(val) {
-    setAnswers(prev => ({ ...prev, [ALL_Q[qi].id]: val }));
-  }
-
-  const curQ = ALL_Q[qi];
-
-  switch (stage) {
-    case "onboard":
-      return <Onboarding onStart={handleStart} />;
-
-    case "tailoring":
-      return <LoadingScreen message={loadMsg} />;
-
-    case "interview":
-      return curQ ? (
-        <QuestionScreen
-          question={curQ}
-          tailored={tailored[curQ.id]}
-          answer={answers[curQ.id]}
-          onChange={handleAnswerChange}
-          onNext={handleNext}
-          onBack={handleBack}
-          qi={qi}
-          total={ALL_Q.length}
-        />
-      ) : null;
-
-    case "generating":
-      return <LoadingScreen message={loadMsg} />;
-
-    case "report":
-      return report ? (
-        <ReportScreen
-          report={report}
-          biz={biz}
-          social={social}
-          answers={answers}
-          submitted={submitted}
-        />
-      ) : null;
-
-    default:
-      return null;
-  }
+  if(stage==="onboard")return<Onboarding onStart={handleStart}/>;
+  if(stage==="tailoring"||stage==="submitting")return(
+    <div style={{minHeight:"100vh",background:B.bg,display:"flex",flexDirection:"column"}}>
+      <Header/>
+      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:20}}>
+        <div style={{width:44,height:44,border:`4px solid ${B.border}`,borderTop:`4px solid ${B.rust}`,borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
+        <p style={{color:B.sand,fontSize:15,textAlign:"center",maxWidth:340,lineHeight:1.8}}>{loadMsg}</p>
+      </div>
+    </div>
+  );
+  if(stage==="interview"&&curQ)return(
+    <Question
+      question={curQ}
+      tailored={tailored[curQ.id]}
+      answer={answers[curQ.id]}
+      onChange={val=>setAnswers({...answers,[curQ.id]:val})}
+      onNext={handleNext}
+      onBack={()=>setQi(qi-1)}
+      qi={qi}
+      total={ALL_Q.length}
+      isLast={qi===ALL_Q.length-1}
+    />
+  );
+  if(stage==="complete")return<Completion biz={biz} score={score} submitted={submitted}/>;
+  return null;
 }
 
-/* ============================================================
-   MOUNT
-   ============================================================ */
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
