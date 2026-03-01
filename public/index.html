@@ -963,6 +963,24 @@ async function callClaude(prompt, maxTokens = 900) {
   return (data.content?.map(b => b.text || "").join("") || "")
     .replace(/```json|```/g, "").trim();
 }
+}
+  
+function safeJsonParse(maybeJsonText) {
+  if (!maybeJsonText) throw new Error("Empty response from Claude");
+
+  let t = String(maybeJsonText)
+    .replace(/```json|```/g, "")
+    .trim();
+
+  const start = t.indexOf("{");
+  const end = t.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("No JSON object found in Claude response");
+  }
+
+  t = t.slice(start, end + 1);
+  return JSON.parse(t);
+}
 
 async function tailorQuestion(base, subs, industry, bizType, qNum) {
   try {
@@ -974,7 +992,7 @@ async function tailorQuestion(base, subs, industry, bizType, qNum) {
       `Original Q${qNum}: ${base}\n` +
       `Original subs: ${subs.join(" | ")}`
     );
-    const parsed = JSON.parse(raw);
+   const parsed = safeJsonParse(raw);
     if (parsed.main && Array.isArray(parsed.subs)) return parsed;
     return { main: base, subs };
   } catch {
@@ -1022,7 +1040,7 @@ async function buildReport(answers, biz) {
     1200
   );
 
-  return JSON.parse(raw);
+return safeJsonParse(raw);
 }
 
 async function submitToAirtable(biz, social, answers, report) {
